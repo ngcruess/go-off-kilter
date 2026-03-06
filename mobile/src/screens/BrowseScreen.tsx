@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   FlatList,
@@ -10,24 +10,84 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { fetchClimbs } from '../api/client';
+import { fetchClimbs, fetchGrades } from '../api/client';
 import { ProblemCard } from '../components/ProblemCard/ProblemCard';
 import { ClimbSummary, GRADE_LABELS, ANGLES } from '../types';
 import { useUser } from '../context/UserContext';
+
+type UserFilter = 'attempted' | 'sent' | 'not_sent' | undefined;
+type SortKey = 'ascents' | 'date' | 'rating' | 'name';
+type SortOrder = 'asc' | 'desc';
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'ascents', label: 'Ascents' },
+  { key: 'date', label: 'Set Date' },
+  { key: 'rating', label: 'Rating' },
+  { key: 'name', label: 'Name' },
+];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Browse'>;
 
 export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
   const { user, angle, setAngle } = useUser();
   const [search, setSearch] = useState('');
+  const [setter, setSetter] = useState('');
   const [gradeMin, setGradeMin] = useState<number | undefined>(undefined);
   const [gradeMax, setGradeMax] = useState<number | undefined>(undefined);
+  const [setAngleFilter, setSetAngleFilter] = useState<number | undefined>(undefined);
   const [noMatch, setNoMatch] = useState<boolean | undefined>(undefined);
+  const [userFilter, setUserFilter] = useState<UserFilter>(undefined);
+  const [sortKey, setSortKey] = useState<SortKey>('ascents');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [showFilters, setShowFilters] = useState(false);
   const [showAnglePicker, setShowAnglePicker] = useState(false);
+
+  const gradesQuery = useQuery({
+    queryKey: ['grades'],
+    queryFn: fetchGrades,
+    staleTime: Infinity,
+  });
+
+  // Map V-grade number (0-14) to its difficulty range in the DB
+  const vGradeRanges = useMemo(() => {
+    if (!gradesQuery.data) return null;
+    const map: Record<number, { min: number; max: number }> = {};
+    for (const g of gradesQuery.data) {
+      const m = g.boulder_name.match(/V(\d+)/);
+      if (!m) continue;
+      const v = parseInt(m[1], 10);
+      if (!map[v]) {
+        map[v] = { min: g.difficulty, max: g.difficulty };
+      } else {
+        map[v].min = Math.min(map[v].min, g.difficulty);
+        map[v].max = Math.max(map[v].max, g.difficulty);
+      }
+    }
+    return map;
+  }, [gradesQuery.data]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (setter) count++;
+    if (gradeMin !== undefined) count++;
+    if (gradeMax !== undefined) count++;
+    if (setAngleFilter !== undefined) count++;
+    if (noMatch !== undefined) count++;
+    if (userFilter) count++;
+    return count;
+  }, [setter, gradeMin, gradeMax, setAngleFilter, noMatch, userFilter]);
+
+  const clearFilters = useCallback(() => {
+    setSetter('');
+    setGradeMin(undefined);
+    setGradeMax(undefined);
+    setSetAngleFilter(undefined);
+    setNoMatch(undefined);
+    setUserFilter(undefined);
+  }, []);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -75,14 +135,20 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['climbs', search, gradeMin, gradeMax, angle, noMatch],
+    queryKey: ['climbs', search, setter, gradeMin, gradeMax, angle, setAngleFilter, noMatch, userFilter, user?.id, sortKey, sortOrder],
     queryFn: ({ pageParam }) =>
       fetchClimbs({
         name: search || undefined,
-        grade_min: gradeMin,
-        grade_max: gradeMax,
+        setter: setter || undefined,
+        grade_min: gradeMin !== undefined ? vGradeRanges?.[gradeMin]?.min : undefined,
+        grade_max: gradeMax !== undefined ? vGradeRanges?.[gradeMax]?.max : undefined,
         angle,
+        set_angle: setAngleFilter,
         no_match: noMatch,
+        user_id: userFilter ? user?.id : undefined,
+        user_filter: userFilter,
+        sort: sortKey,
+        order: sortOrder,
         cursor: pageParam,
         limit: 20,
       }),
@@ -120,30 +186,104 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
         >
           <Text style={styles.filterButtonText}>
             {showFilters ? 'Hide' : 'Filters'}
+            {!showFilters && activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
           </Text>
         </TouchableOpacity>
       </View>
 
+      <View style={styles.sortRow}>
+        {SORT_OPTIONS.map((opt) => (
+          <TouchableOpacity
+            key={opt.key}
+            style={[styles.sortChip, sortKey === opt.key && styles.sortChipActive]}
+            onPress={() => {
+              if (sortKey === opt.key) {
+                setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+              } else {
+                setSortKey(opt.key);
+                setSortOrder(opt.key === 'name' ? 'asc' : 'desc');
+              }
+            }}
+          >
+            <Text style={[styles.sortChipText, sortKey === opt.key && styles.sortChipTextActive]}>
+              {opt.label}
+              {sortKey === opt.key ? (sortOrder === 'desc' ? ' \u2193' : ' \u2191') : ''}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       {showFilters && (
-        <View style={styles.filterSection}>
+        <ScrollView style={styles.filterScroll} contentContainerStyle={styles.filterSection}>
+          <TextInput
+            style={styles.setterInput}
+            placeholder="Setter name..."
+            placeholderTextColor="#666"
+            value={setter}
+            onChangeText={setSetter}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
           <Text style={styles.filterLabel}>Grade Range</Text>
           <View style={styles.filterRow}>
             <FilterPicker
               label="Min"
-              options={GRADE_LABELS}
+              options={GRADE_LABELS.slice(0, 15)}
               value={gradeMin}
-              onSelect={(v) => setGradeMin(v)}
+              onSelect={setGradeMin}
             />
             <FilterPicker
               label="Max"
-              options={GRADE_LABELS}
+              options={GRADE_LABELS.slice(0, 15)}
               value={gradeMax}
-              onSelect={(v) => setGradeMax(v)}
+              onSelect={setGradeMax}
             />
           </View>
 
+          <Text style={styles.filterLabel}>Set Angle</Text>
+          <View style={styles.chipRow}>
+            <TouchableOpacity
+              style={[styles.chip, setAngleFilter === undefined && styles.chipActive]}
+              onPress={() => setSetAngleFilter(undefined)}
+            >
+              <Text style={[styles.chipText, setAngleFilter === undefined && styles.chipTextActive]}>Any</Text>
+            </TouchableOpacity>
+            {ANGLES.map((a) => (
+              <TouchableOpacity
+                key={a}
+                style={[styles.chip, setAngleFilter === a && styles.chipActive]}
+                onPress={() => setSetAngleFilter(setAngleFilter === a ? undefined : a)}
+              >
+                <Text style={[styles.chipText, setAngleFilter === a && styles.chipTextActive]}>
+                  {a}{'\u00B0'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.filterLabel}>My Activity</Text>
+          <View style={styles.chipRow}>
+            {([
+              { label: 'All', value: undefined as UserFilter },
+              { label: 'Attempted', value: 'attempted' as UserFilter },
+              { label: 'Sent', value: 'sent' as UserFilter },
+              { label: 'Not Sent', value: 'not_sent' as UserFilter },
+            ]).map((opt) => (
+              <TouchableOpacity
+                key={String(opt.value)}
+                style={[styles.matchChip, userFilter === opt.value && styles.matchChipActive]}
+                onPress={() => setUserFilter(opt.value)}
+              >
+                <Text style={[styles.matchChipText, userFilter === opt.value && styles.matchChipTextActive]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           <Text style={styles.filterLabel}>Matching</Text>
-          <View style={styles.matchRow}>
+          <View style={styles.chipRow}>
             {([
               { label: 'All', value: undefined as boolean | undefined },
               { label: 'Match OK', value: false },
@@ -160,47 +300,55 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
-      )}
 
-      {isLoading && !isFetchingNextPage && (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#42A5F5" />
-        </View>
-      )}
-
-      {error && (
-        <View style={styles.center}>
-          <Text style={styles.errorText}>Failed to load problems</Text>
-          <Text style={styles.errorDetail}>{(error as Error).message}</Text>
-        </View>
-      )}
-
-      {!isLoading && (
-        <FlatList
-          data={allClimbs}
-          keyExtractor={(item) => item.uuid}
-          renderItem={({ item }) => (
-            <ProblemCard
-              climb={item}
-              onPress={() => navigation.navigate('ProblemDetail', { uuid: item.uuid })}
-            />
+          {activeFilterCount > 0 && (
+            <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+              <Text style={styles.clearButtonText}>Clear All Filters</Text>
+            </TouchableOpacity>
           )}
-          contentContainerStyle={styles.list}
-          onEndReached={handleEndReached}
-          onEndReachedThreshold={0.5}
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <Text style={styles.emptyText}>No problems found</Text>
-            </View>
-          }
-          ListFooterComponent={
-            isFetchingNextPage ? (
-              <ActivityIndicator style={{ paddingVertical: 16 }} color="#42A5F5" />
-            ) : null
-          }
-        />
+        </ScrollView>
       )}
+
+      <View style={styles.listContainer}>
+        {isLoading && !isFetchingNextPage && (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color="#42A5F5" />
+          </View>
+        )}
+
+        {error && (
+          <View style={styles.center}>
+            <Text style={styles.errorText}>Failed to load problems</Text>
+            <Text style={styles.errorDetail}>{(error as Error).message}</Text>
+          </View>
+        )}
+
+        {!isLoading && (
+          <FlatList
+            data={allClimbs}
+            keyExtractor={(item) => item.uuid}
+            renderItem={({ item }) => (
+              <ProblemCard
+                climb={item}
+                onPress={() => navigation.navigate('ProblemDetail', { uuid: item.uuid })}
+              />
+            )}
+            contentContainerStyle={styles.list}
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.5}
+            ListEmptyComponent={
+              <View style={styles.center}>
+                <Text style={styles.emptyText}>No problems found</Text>
+              </View>
+            }
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <ActivityIndicator style={{ paddingVertical: 16 }} color="#42A5F5" />
+              ) : null
+            }
+          />
+        )}
+      </View>
 
       <TouchableOpacity
         style={styles.fab}
@@ -291,12 +439,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center', borderWidth: 1, borderColor: '#333',
   },
   filterButtonText: { color: '#42A5F5', fontSize: 14, fontWeight: '600' },
-  filterSection: { paddingHorizontal: 12, paddingBottom: 8 },
+  sortRow: {
+    flexDirection: 'row', paddingHorizontal: 12, paddingBottom: 8, gap: 6,
+  },
+  sortChip: {
+    backgroundColor: '#1e1e1e', borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderWidth: 1, borderColor: '#333',
+  },
+  sortChipActive: { backgroundColor: '#2a2a2a', borderColor: '#42A5F5' },
+  sortChipText: { color: '#888', fontSize: 13 },
+  sortChipTextActive: { color: '#42A5F5', fontWeight: '600' },
+  filterScroll: { maxHeight: 320 },
+  filterSection: { paddingHorizontal: 12, paddingBottom: 12 },
   filterLabel: {
     color: '#999', fontSize: 12, fontWeight: '600',
-    textTransform: 'uppercase', marginBottom: 6, marginTop: 8,
+    textTransform: 'uppercase', marginBottom: 6, marginTop: 12,
   },
   filterRow: { flexDirection: 'row', gap: 12 },
+  setterInput: {
+    backgroundColor: '#1e1e1e', borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 8, color: '#ffffff',
+    fontSize: 14, borderWidth: 1, borderColor: '#333', marginTop: 4,
+  },
+  clearButton: {
+    alignSelf: 'center', marginTop: 14,
+    paddingHorizontal: 20, paddingVertical: 8,
+    borderRadius: 8, borderWidth: 1, borderColor: '#ff6b6b',
+  },
+  clearButtonText: { color: '#ff6b6b', fontSize: 13, fontWeight: '600' },
+  listContainer: { flex: 1 },
   angleModalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center',
   },
@@ -320,7 +492,6 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: '#42A5F5', borderColor: '#42A5F5' },
   chipText: { color: '#888', fontSize: 12 },
   chipTextActive: { color: '#fff', fontWeight: '600' },
-  matchRow: { flexDirection: 'row', gap: 8 },
   matchChip: {
     backgroundColor: '#1e1e1e', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6,
     borderWidth: 1, borderColor: '#333',

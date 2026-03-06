@@ -69,6 +69,7 @@ export interface ClimbDetail {
   is_listed: boolean;
   is_no_match?: boolean;
   created_at: string;
+  set_angle?: number;
   stats?: ClimbStats;
   placements: ClimbPlacement[];
 }
@@ -153,6 +154,26 @@ export interface UserStats {
   sends_by_grade: GradeCount[];
   sends_by_angle: AngleCount[];
   sends_by_month: MonthCount[];
+}
+
+export interface ClimbList {
+  id: number;
+  user_id: number;
+  name: string;
+  color: string;
+  item_count: number;
+  created_at: string;
+}
+
+export interface ClimbListDetail extends ClimbList {
+  items: ClimbSummary[];
+}
+
+export interface ListMembership {
+  list_id: number;
+  name: string;
+  color: string;
+  contains: boolean;
 }
 
 export type HoldColor = 'yellow' | 'green' | 'blue' | 'pink' | null;

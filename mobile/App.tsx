@@ -11,6 +11,11 @@ import { CreateScreen } from './src/screens/CreateScreen';
 import { PublishScreen } from './src/screens/PublishScreen';
 import { LogbookScreen } from './src/screens/LogbookScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { ListsScreen } from './src/screens/ListsScreen';
+import { ListDetailScreen } from './src/screens/ListDetailScreen';
+import { FollowingScreen } from './src/screens/FollowingScreen';
+import { UserSearchScreen } from './src/screens/UserSearchScreen';
+import { UserProfileScreen } from './src/screens/UserProfileScreen';
 
 export type RootStackParamList = {
   Browse: undefined;
@@ -19,6 +24,11 @@ export type RootStackParamList = {
   Publish: { uuid: string; frames: string; layoutId: number };
   Profile: undefined;
   Logbook: undefined;
+  Lists: undefined;
+  ListDetail: { listId: number; listName: string };
+  Following: undefined;
+  UserSearch: undefined;
+  UserProfile: { userId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -63,7 +73,7 @@ function AppNavigator() {
           <Stack.Screen
             name="Browse"
             component={BrowseScreen}
-            options={{ title: 'Go Off Kilter', headerBackTitle: 'List' }}
+            options={{ title: 'Climbs' }}
           />
         <Stack.Screen
           name="ProblemDetail"
@@ -89,6 +99,31 @@ function AppNavigator() {
           name="Logbook"
           component={LogbookScreen}
           options={{ title: 'Logbook' }}
+        />
+        <Stack.Screen
+          name="Lists"
+          component={ListsScreen}
+          options={{ title: 'My Lists' }}
+        />
+        <Stack.Screen
+          name="ListDetail"
+          component={ListDetailScreen}
+          options={{ title: 'List' }}
+        />
+        <Stack.Screen
+          name="Following"
+          component={FollowingScreen}
+          options={{ title: 'Following' }}
+        />
+        <Stack.Screen
+          name="UserSearch"
+          component={UserSearchScreen}
+          options={{ title: 'Find Users' }}
+        />
+        <Stack.Screen
+          name="UserProfile"
+          component={UserProfileScreen}
+          options={{ title: 'Profile' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

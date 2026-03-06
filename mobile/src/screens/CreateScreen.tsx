@@ -13,6 +13,7 @@ import { RootStackParamList } from '../../App';
 import { fetchBoardLayout, createClimb } from '../api/client';
 import { BoardView } from '../components/BoardView/BoardView';
 import { HoldColor, COLOR_TO_ROLE, COLOR_HEX } from '../types';
+import { useUser } from '../context/UserContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Create'>;
 
@@ -20,6 +21,7 @@ const COLOR_CYCLE: (HoldColor)[] = [null, 'yellow', 'green', 'blue', 'pink'];
 
 export const CreateScreen: React.FC<Props> = ({ route, navigation }) => {
   const { layoutId } = route.params;
+  const { user } = useUser();
   const [selectedHolds, setSelectedHolds] = useState<Map<number, HoldColor>>(new Map());
   const [saving, setSaving] = useState(false);
 
@@ -65,6 +67,7 @@ export const CreateScreen: React.FC<Props> = ({ route, navigation }) => {
       const frames = buildFrames();
       const climb = await createClimb({
         layout_id: layoutId,
+        setter_id: user?.id ?? 0,
         name: '',
         frames,
       });

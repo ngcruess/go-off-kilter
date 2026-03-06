@@ -36,6 +36,7 @@ var migrations = []string{
 	`ALTER TABLE climbs ADD COLUMN is_no_match INTEGER NOT NULL DEFAULT 0`,
 	`UPDATE climbs SET is_no_match = 1 WHERE LOWER(description) LIKE '%no match%' AND is_no_match = 0`,
 	`CREATE INDEX IF NOT EXISTS idx_climbs_no_match ON climbs(is_no_match)`,
+	`ALTER TABLE lists ADD COLUMN color TEXT NOT NULL DEFAULT '#42A5F5'`,
 }
 
 const schema = `
@@ -140,6 +141,33 @@ CREATE INDEX IF NOT EXISTS idx_climb_stats_angle ON climb_stats(angle);
 CREATE INDEX IF NOT EXISTS idx_climb_stats_difficulty ON climb_stats(display_difficulty);
 CREATE INDEX IF NOT EXISTS idx_placements_layout ON placements(layout_id);
 CREATE INDEX IF NOT EXISTS idx_placements_hole ON placements(hole_id);
+CREATE TABLE IF NOT EXISTS lists (
+	id         INTEGER PRIMARY KEY AUTOINCREMENT,
+	user_id    INTEGER NOT NULL REFERENCES users(id),
+	name       TEXT NOT NULL,
+	color      TEXT NOT NULL DEFAULT '#42A5F5',
+	created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS list_items (
+	list_id    INTEGER NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+	climb_uuid TEXT NOT NULL REFERENCES climbs(uuid),
+	added_at   TEXT NOT NULL DEFAULT (datetime('now')),
+	PRIMARY KEY (list_id, climb_uuid)
+);
+
+CREATE TABLE IF NOT EXISTS follows (
+	follower_id INTEGER NOT NULL REFERENCES users(id),
+	followed_id INTEGER NOT NULL REFERENCES users(id),
+	created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+	PRIMARY KEY (follower_id, followed_id),
+	CHECK (follower_id != followed_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_ascents_user ON ascents(user_id);
 CREATE INDEX IF NOT EXISTS idx_ascents_climb ON ascents(climb_uuid);
+CREATE INDEX IF NOT EXISTS idx_lists_user ON lists(user_id);
+CREATE INDEX IF NOT EXISTS idx_list_items_climb ON list_items(climb_uuid);
+CREATE INDEX IF NOT EXISTS idx_follows_follower ON follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_follows_followed ON follows(followed_id);
 `

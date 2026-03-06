@@ -5,9 +5,10 @@ import { ClimbSummary } from '../../types';
 interface ProblemCardProps {
   climb: ClimbSummary;
   onPress: () => void;
+  onLongPress?: () => void;
 }
 
-export const ProblemCard: React.FC<ProblemCardProps> = ({ climb, onPress }) => {
+export const ProblemCard: React.FC<ProblemCardProps> = ({ climb, onPress, onLongPress }) => {
   const grade = climb.grade || '??';
 
   const stars = climb.quality_average
@@ -15,7 +16,7 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({ climb, onPress }) => {
     : '';
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity style={styles.card} onPress={onPress} onLongPress={onLongPress} activeOpacity={0.7}>
       <View style={styles.header}>
         <Text style={styles.name} numberOfLines={1}>
           {climb.name || 'Untitled'}

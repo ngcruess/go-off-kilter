@@ -11,17 +11,17 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { fetchUserStats, fetchUserAscents } from '../api/client';
+import { fetchUserStats, fetchUserAscents, fetchUserSetClimbs } from '../api/client';
 import { useUser } from '../context/UserContext';
 import { BarChart, BarDatum } from '../components/BarChart/BarChart';
-import { AscentSummary } from '../types';
+import { AscentSummary, ClimbSummary } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
 type ChartTab = 'grade' | 'angle' | 'time';
 
 export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
-  const { user, logout } = useUser();
+  const { user, logout, angle } = useUser();
   const [chartTab, setChartTab] = useState<ChartTab>('grade');
 
   const statsQuery = useQuery({
@@ -33,6 +33,12 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const recentSendsQuery = useQuery({
     queryKey: ['user-recent-sends', user?.id],
     queryFn: () => fetchUserAscents(user!.id, 1, 5, true),
+    enabled: !!user,
+  });
+
+  const setClimbsQuery = useQuery({
+    queryKey: ['user-set-climbs', user?.id, angle],
+    queryFn: () => fetchUserSetClimbs(user!.id, angle, 5),
     enabled: !!user,
   });
 
@@ -174,6 +180,22 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         </>
       ) : null}
 
+      <TouchableOpacity
+        style={styles.myListsButton}
+        onPress={() => navigation.navigate('Following')}
+      >
+        <Text style={styles.myListsText}>Following</Text>
+        <Text style={styles.myListsChevron}>{'\u203A'}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.myListsButton}
+        onPress={() => navigation.navigate('Lists')}
+      >
+        <Text style={styles.myListsText}>My Lists</Text>
+        <Text style={styles.myListsChevron}>{'\u203A'}</Text>
+      </TouchableOpacity>
+
       <View style={styles.sendsSection}>
         <View style={styles.sendsHeader}>
           <Text style={styles.sendsTitle}>Recent Sends</Text>
@@ -205,6 +227,38 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
                 <Text style={styles.sendDate}>
                   {new Date(send.created_at).toLocaleDateString()}
                 </Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+      </View>
+
+      <View style={styles.sendsSection}>
+        <Text style={styles.sendsTitle}>Climbs Set</Text>
+        {setClimbsQuery.isLoading ? (
+          <ActivityIndicator size="small" color="#42A5F5" style={{ marginVertical: 12 }} />
+        ) : (setClimbsQuery.data ?? []).length === 0 ? (
+          <Text style={styles.emptyText}>No climbs set yet.</Text>
+        ) : (
+          (setClimbsQuery.data ?? []).map((climb: ClimbSummary) => (
+            <TouchableOpacity
+              key={climb.uuid}
+              style={styles.sendCard}
+              onPress={() => navigation.navigate('ProblemDetail', { uuid: climb.uuid })}
+            >
+              <View style={styles.sendCardTop}>
+                <Text style={styles.sendName} numberOfLines={1}>{climb.name}</Text>
+                {climb.grade ? <Text style={styles.sendGrade}>{climb.grade}</Text> : null}
+              </View>
+              <View style={styles.sendCardBottom}>
+                {climb.ascensionist_count != null && (
+                  <Text style={styles.sendMeta}>{climb.ascensionist_count} sends</Text>
+                )}
+                {climb.quality_average != null && climb.quality_average > 0 && (
+                  <Text style={styles.sendMeta}>
+                    {'\u2605'.repeat(Math.round(climb.quality_average))}
+                  </Text>
+                )}
               </View>
             </TouchableOpacity>
           ))
@@ -308,6 +362,16 @@ const styles = StyleSheet.create({
   sendCardBottom: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   sendMeta: { color: '#aaa', fontSize: 12 },
   sendDate: { color: '#666', fontSize: 12, marginLeft: 'auto' },
+
+  myListsButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginHorizontal: 16, marginTop: 16,
+    backgroundColor: '#1a1a1a', borderRadius: 10,
+    paddingVertical: 14, paddingHorizontal: 16,
+    borderWidth: 1, borderColor: '#2a2a2a',
+  },
+  myListsText: { color: '#42A5F5', fontSize: 15, fontWeight: '600' },
+  myListsChevron: { color: '#555', fontSize: 22, fontWeight: '300' },
 
   logoutButton: {
     marginHorizontal: 16,

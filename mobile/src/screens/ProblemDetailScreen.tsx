@@ -10,7 +10,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import {
@@ -20,17 +20,24 @@ import {
   logAscent,
   fetchUserClimbSummary,
   fetchGrades,
+  fetchListsForClimb,
+  addToList,
+  removeFromList,
+  createList,
 } from '../api/client';
 import { BoardView } from '../components/BoardView/BoardView';
 import { useUser } from '../context/UserContext';
-import { DifficultyGrade } from '../types';
+import { DifficultyGrade, ANGLES } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProblemDetail'>;
 
 export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { uuid } = route.params;
-  const { user, angle } = useUser();
+  const { user, angle, setAngle } = useUser();
   const queryClient = useQueryClient();
+  const [showAnglePicker, setShowAnglePicker] = useState(false);
+  const [showListPicker, setShowListPicker] = useState(false);
+  const [newListName, setNewListName] = useState('');
 
   const [sendModalVisible, setSendModalVisible] = useState(false);
   const [selectedGrade, setSelectedGrade] = useState<number | null>(null);
@@ -39,8 +46,8 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [logging, setLogging] = useState(false);
 
   const climbQuery = useQuery({
-    queryKey: ['climb', uuid],
-    queryFn: () => fetchClimb(uuid),
+    queryKey: ['climb', uuid, angle],
+    queryFn: () => fetchClimb(uuid, angle),
   });
 
   const gradesQuery = useQuery({
@@ -61,11 +68,47 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     enabled: !!user,
   });
 
-  React.useEffect(() => {
-    if (climbQuery.data?.name) {
-      navigation.setOptions({ title: climbQuery.data.name });
-    }
-  }, [climbQuery.data?.name, navigation]);
+  const listsQuery = useQuery({
+    queryKey: ['lists-for-climb', user?.id, uuid],
+    queryFn: () => fetchListsForClimb(user!.id, uuid),
+    enabled: !!user && showListPicker,
+  });
+
+  const toggleListItem = useMutation({
+    mutationFn: ({ listId, contains }: { listId: number; contains: boolean }) =>
+      contains ? removeFromList(listId, uuid) : addToList(listId, uuid),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lists-for-climb', user?.id, uuid] });
+      queryClient.invalidateQueries({ queryKey: ['user-lists'] });
+    },
+  });
+
+  const createNewList = useMutation({
+    mutationFn: (name: string) => createList(user!.id, name),
+    onSuccess: async (newList) => {
+      await addToList(newList.id, uuid);
+      setNewListName('');
+      queryClient.invalidateQueries({ queryKey: ['lists-for-climb', user?.id, uuid] });
+      queryClient.invalidateQueries({ queryKey: ['user-lists'] });
+    },
+  });
+
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      title: climbQuery.data?.name || 'Problem',
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => setShowAnglePicker(true)}
+          style={{
+            backgroundColor: '#2a2a2a', borderRadius: 14,
+            paddingHorizontal: 10, paddingVertical: 4,
+          }}
+        >
+          <Text style={{ color: '#42A5F5', fontSize: 14, fontWeight: '700' }}>{angle}{'\u00B0'}</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [climbQuery.data?.name, navigation, angle]);
 
   const handleSendToBoard = async () => {
     try {
@@ -161,6 +204,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const summary = summaryQuery.data;
 
   return (
+    <>
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {layoutQuery.data && (
         <BoardView
@@ -182,13 +226,14 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         </View>
 
         {climb.setter_username ? (
-          <Text style={styles.setter}>Set by {climb.setter_username}</Text>
+          <Text style={styles.setter}>
+            Set by {climb.setter_username}
+            {climb.set_angle != null ? ` at ${climb.set_angle}\u00B0` : ''}
+          </Text>
         ) : null}
 
         <View style={styles.statsRow}>
-          {climb.stats?.angle ? (
-            <StatBadge label="Angle" value={`${climb.stats.angle}\u00B0`} />
-          ) : null}
+          <StatBadge label="Angle" value={`${angle}\u00B0`} />
           {climb.stats?.ascensionist_count ? (
             <StatBadge label="Sends" value={String(climb.stats.ascensionist_count)} />
           ) : null}
@@ -235,6 +280,13 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <Text style={styles.logButtonText}>Log Send</Text>
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity
+        style={styles.listButton}
+        onPress={() => setShowListPicker(true)}
+      >
+        <Text style={styles.listButtonText}>Add to List</Text>
+      </TouchableOpacity>
 
       {/* Log Send Modal */}
       <Modal
@@ -313,7 +365,81 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
         </View>
       </Modal>
+
     </ScrollView>
+
+    <Modal visible={showAnglePicker} transparent animationType="fade" onRequestClose={() => setShowAnglePicker(false)}>
+      <TouchableOpacity style={styles.angleModalOverlay} activeOpacity={1} onPress={() => setShowAnglePicker(false)}>
+        <View style={styles.angleModalContent}>
+          <Text style={styles.angleModalTitle}>Board Angle</Text>
+          <View style={styles.angleGrid}>
+            {ANGLES.map((a) => (
+              <TouchableOpacity
+                key={a}
+                style={[styles.angleOption, angle === a && styles.angleOptionActive]}
+                onPress={() => { setAngle(a); setShowAnglePicker(false); }}
+              >
+                <Text style={[styles.angleOptionText, angle === a && styles.angleOptionTextActive]}>
+                  {a}{'\u00B0'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+
+    <Modal visible={showListPicker} transparent animationType="slide" onRequestClose={() => setShowListPicker(false)}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.listModalContent}>
+          <Text style={styles.modalTitle}>Add to List</Text>
+
+          {listsQuery.isLoading ? (
+            <ActivityIndicator color="#42A5F5" style={{ marginVertical: 20 }} />
+          ) : (listsQuery.data ?? []).length === 0 ? (
+            <Text style={styles.listEmptyText}>No lists yet. Create one below.</Text>
+          ) : (
+            <ScrollView style={styles.listScroll}>
+              {(listsQuery.data ?? []).map((m) => (
+                <TouchableOpacity
+                  key={m.list_id}
+                  style={styles.listRow}
+                  onPress={() => toggleListItem.mutate({ listId: m.list_id, contains: m.contains })}
+                >
+                  <View style={[styles.listCheckbox, m.contains && styles.listCheckboxActive]}>
+                    {m.contains && <Text style={styles.listCheckmark}>{'\u2713'}</Text>}
+                  </View>
+                  <Text style={styles.listRowText}>{m.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+
+          <View style={styles.newListRow}>
+            <TextInput
+              style={styles.newListInput}
+              placeholder="New list name..."
+              placeholderTextColor="#666"
+              value={newListName}
+              onChangeText={setNewListName}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              style={[styles.newListButton, !newListName.trim() && { opacity: 0.4 }]}
+              onPress={() => newListName.trim() && createNewList.mutate(newListName.trim())}
+              disabled={!newListName.trim() || createNewList.isPending}
+            >
+              <Text style={styles.newListButtonText}>Create</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={styles.modalCancel} onPress={() => setShowListPicker(false)}>
+            <Text style={styles.modalCancelText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  </>
   );
 };
 
@@ -405,4 +531,50 @@ const styles = StyleSheet.create({
     backgroundColor: '#2e7d32',
   },
   modalSubmitText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  angleModalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center',
+  },
+  angleModalContent: { backgroundColor: '#1a1a1a', borderRadius: 16, padding: 20, width: 300 },
+  angleModalTitle: { color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
+  angleGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
+  angleOption: {
+    backgroundColor: '#2a2a2a', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10,
+    borderWidth: 1, borderColor: '#444', minWidth: 56, alignItems: 'center',
+  },
+  angleOptionActive: { backgroundColor: '#42A5F5', borderColor: '#42A5F5' },
+  angleOptionText: { color: '#aaa', fontSize: 15, fontWeight: '600' },
+  angleOptionTextActive: { color: '#fff' },
+  listButton: {
+    marginHorizontal: 16, marginTop: 10, backgroundColor: '#1e1e1e',
+    borderRadius: 12, paddingVertical: 14, alignItems: 'center',
+    borderWidth: 1, borderColor: '#333',
+  },
+  listButtonText: { color: '#42A5F5', fontSize: 15, fontWeight: '700' },
+  listModalContent: {
+    backgroundColor: '#1a1a1a', borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    padding: 20, paddingBottom: 40, maxHeight: '70%',
+  },
+  listScroll: { marginBottom: 12 },
+  listEmptyText: { color: '#666', fontSize: 14, textAlign: 'center', marginVertical: 20 },
+  listRow: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: '#2a2a2a',
+  },
+  listCheckbox: {
+    width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: '#555',
+    marginRight: 12, justifyContent: 'center', alignItems: 'center',
+  },
+  listCheckboxActive: { backgroundColor: '#42A5F5', borderColor: '#42A5F5' },
+  listCheckmark: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  listRowText: { color: '#fff', fontSize: 15 },
+  newListRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  newListInput: {
+    flex: 1, backgroundColor: '#2a2a2a', borderRadius: 10, paddingHorizontal: 12,
+    paddingVertical: 8, color: '#fff', fontSize: 14, borderWidth: 1, borderColor: '#444',
+  },
+  newListButton: {
+    backgroundColor: '#42A5F5', borderRadius: 10, paddingHorizontal: 16,
+    justifyContent: 'center',
+  },
+  newListButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });

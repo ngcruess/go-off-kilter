@@ -6,6 +6,7 @@
 *.dylib
 *.test
 *.out
+*.sqlite3
 
 # Go
 coverage.*

@@ -20,18 +20,24 @@ func NewClimbStore(db *sql.DB) *ClimbStore {
 }
 
 type ClimbListParams struct {
-	Name     string
-	GradeMin *float64
-	GradeMax *float64
-	Angle    *int
-	NoMatch  *bool
-	Cursor   string
-	Limit    int
+	Name       string
+	SetterName string
+	GradeMin   *float64
+	GradeMax   *float64
+	Angle      *int
+	SetAngle   *int
+	NoMatch    *bool
+	UserID     *int
+	UserFilter string // "attempted", "sent", "not_sent"
+	Sort       string // "ascents", "date", "rating", "name"
+	Order      string // "asc", "desc"
+	Cursor     string
+	Limit      int
 }
 
 type cursorValue struct {
-	Count int    `json:"c"`
-	Name  string `json:"n"`
+	Val  string `json:"v"`
+	Name string `json:"n"`
 }
 
 func decodeCursor(s string) (*cursorValue, error) {
@@ -49,15 +55,43 @@ func decodeCursor(s string) (*cursorValue, error) {
 	return &cv, nil
 }
 
-func encodeCursor(count int, name string) string {
-	cv := cursorValue{Count: count, Name: name}
+func encodeCursor(val, name string) string {
+	cv := cursorValue{Val: val, Name: name}
 	b, _ := json.Marshal(cv)
 	return base64.URLEncoding.EncodeToString(b)
+}
+
+type sortSpec struct {
+	expr     string // SQL expression for the sort column
+	castExpr string // SQL expression for cursor comparison (with CAST if needed)
+}
+
+var sortSpecs = map[string]sortSpec{
+	"ascents": {expr: "COALESCE(cs.ascensionist_count, 0)", castExpr: "CAST(? AS INTEGER)"},
+	"date":    {expr: "c.created_at", castExpr: "?"},
+	"rating":  {expr: "COALESCE(cs.quality_average, 0)", castExpr: "CAST(? AS REAL)"},
+	"name":    {expr: "c.name", castExpr: "?"},
 }
 
 func (s *ClimbStore) List(params ClimbListParams) ([]models.ClimbSummary, string, error) {
 	if params.Limit < 1 || params.Limit > 100 {
 		params.Limit = 20
+	}
+	if params.Sort == "" {
+		params.Sort = "ascents"
+	}
+	if params.Order == "" {
+		if params.Sort == "name" {
+			params.Order = "asc"
+		} else {
+			params.Order = "desc"
+		}
+	}
+
+	spec, ok := sortSpecs[params.Sort]
+	if !ok {
+		spec = sortSpecs["ascents"]
+		params.Sort = "ascents"
 	}
 
 	angle := 40
@@ -79,6 +113,10 @@ func (s *ClimbStore) List(params ClimbListParams) ([]models.ClimbSummary, string
 		where = append(where, "c.name LIKE ?")
 		args = append(args, "%"+params.Name+"%")
 	}
+	if params.SetterName != "" {
+		where = append(where, "c.setter_username LIKE ?")
+		args = append(args, "%"+params.SetterName+"%")
+	}
 	if params.GradeMin != nil {
 		where = append(where, "cs.display_difficulty >= ?")
 		args = append(args, *params.GradeMin)
@@ -87,6 +125,12 @@ func (s *ClimbStore) List(params ClimbListParams) ([]models.ClimbSummary, string
 		where = append(where, "cs.display_difficulty <= ?")
 		args = append(args, *params.GradeMax)
 	}
+	if params.SetAngle != nil {
+		where = append(where,
+			`(SELECT sa.angle FROM climb_stats sa WHERE sa.climb_uuid = c.uuid
+			  ORDER BY sa.ascensionist_count DESC LIMIT 1) = ?`)
+		args = append(args, *params.SetAngle)
+	}
 	if params.NoMatch != nil {
 		if *params.NoMatch {
 			where = append(where, "c.is_no_match = 1")
@@ -94,13 +138,54 @@ func (s *ClimbStore) List(params ClimbListParams) ([]models.ClimbSummary, string
 			where = append(where, "c.is_no_match = 0")
 		}
 	}
+	if params.UserID != nil {
+		switch params.UserFilter {
+		case "attempted":
+			where = append(where,
+				"EXISTS (SELECT 1 FROM ascents a WHERE a.climb_uuid = c.uuid AND a.user_id = ?)")
+			args = append(args, *params.UserID)
+		case "sent":
+			where = append(where,
+				"EXISTS (SELECT 1 FROM ascents a WHERE a.climb_uuid = c.uuid AND a.user_id = ? AND a.is_send = 1)")
+			args = append(args, *params.UserID)
+		case "not_sent":
+			where = append(where,
+				"NOT EXISTS (SELECT 1 FROM ascents a WHERE a.climb_uuid = c.uuid AND a.user_id = ? AND a.is_send = 1)")
+			args = append(args, *params.UserID)
+		}
+	}
+
 	if cursor != nil {
-		where = append(where,
-			"(COALESCE(cs.ascensionist_count, 0) < ? OR (COALESCE(cs.ascensionist_count, 0) = ? AND c.name > ?))")
-		args = append(args, cursor.Count, cursor.Count, cursor.Name)
+		cmpOp := "<"
+		tieOp := ">"
+		if params.Order == "asc" {
+			cmpOp = ">"
+			tieOp = ">"
+		}
+		if params.Sort == "name" {
+			where = append(where, fmt.Sprintf("c.name %s ?", cmpOp))
+			args = append(args, cursor.Name)
+		} else {
+			where = append(where, fmt.Sprintf(
+				"(%s %s %s OR (%s = %s AND c.name %s ?))",
+				spec.expr, cmpOp, spec.castExpr,
+				spec.expr, spec.castExpr, tieOp))
+			args = append(args, cursor.Val, cursor.Val, cursor.Name)
+		}
 	}
 
 	whereClause := "WHERE " + strings.Join(where, " AND ")
+
+	orderDir := "DESC"
+	if params.Order == "asc" {
+		orderDir = "ASC"
+	}
+	var orderClause string
+	if params.Sort == "name" {
+		orderClause = fmt.Sprintf("ORDER BY c.name %s", orderDir)
+	} else {
+		orderClause = fmt.Sprintf("ORDER BY %s %s, c.name ASC", spec.expr, orderDir)
+	}
 
 	fetchLimit := params.Limit + 1
 	query := fmt.Sprintf(`
@@ -108,13 +193,13 @@ func (s *ClimbStore) List(params ClimbListParams) ([]models.ClimbSummary, string
 			COALESCE(cs.angle, 0), COALESCE(cs.display_difficulty, 0),
 			COALESCE(dg.boulder_name, ''),
 			COALESCE(cs.quality_average, 0), COALESCE(cs.ascensionist_count, 0),
-			c.is_no_match
+			c.is_no_match, c.created_at
 		FROM climbs c
 		LEFT JOIN climb_stats cs ON cs.climb_uuid = c.uuid AND cs.angle = %d
 		LEFT JOIN difficulty_grades dg ON dg.difficulty = CAST(ROUND(cs.display_difficulty) AS INTEGER)
 		%s
-		ORDER BY COALESCE(cs.ascensionist_count, 0) DESC, c.name ASC
-		LIMIT ?`, angle, whereClause)
+		%s
+		LIMIT ?`, angle, whereClause, orderClause)
 
 	args = append(args, fetchLimit)
 	rows, err := s.db.Query(query, args...)
@@ -128,7 +213,7 @@ func (s *ClimbStore) List(params ClimbListParams) ([]models.ClimbSummary, string
 		var cs models.ClimbSummary
 		if err := rows.Scan(&cs.UUID, &cs.Name, &cs.SetterUsername, &cs.IsDraft,
 			&cs.Angle, &cs.DisplayDifficulty, &cs.Grade,
-			&cs.QualityAverage, &cs.AscentionistCount, &cs.IsNoMatch); err != nil {
+			&cs.QualityAverage, &cs.AscentionistCount, &cs.IsNoMatch, &cs.CreatedAt); err != nil {
 			return nil, "", err
 		}
 		climbs = append(climbs, cs)
@@ -141,13 +226,58 @@ func (s *ClimbStore) List(params ClimbListParams) ([]models.ClimbSummary, string
 	if len(climbs) > params.Limit {
 		climbs = climbs[:params.Limit]
 		last := climbs[params.Limit-1]
-		nextCursor = encodeCursor(last.AscentionistCount, last.Name)
+		var sortVal string
+		switch params.Sort {
+		case "ascents":
+			sortVal = fmt.Sprintf("%d", last.AscentionistCount)
+		case "date":
+			sortVal = last.CreatedAt
+		case "rating":
+			sortVal = fmt.Sprintf("%f", last.QualityAverage)
+		default:
+			sortVal = last.Name
+		}
+		nextCursor = encodeCursor(sortVal, last.Name)
 	}
 
 	return climbs, nextCursor, nil
 }
 
-func (s *ClimbStore) GetByUUID(uuid string) (*models.ClimbDetail, error) {
+func (s *ClimbStore) ListBySetter(username string, angle, limit int) ([]models.ClimbSummary, error) {
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	rows, err := s.db.Query(fmt.Sprintf(`
+		SELECT c.uuid, c.name, c.setter_username, c.is_draft,
+			COALESCE(cs.angle, 0), COALESCE(cs.display_difficulty, 0),
+			COALESCE(dg.boulder_name, ''),
+			COALESCE(cs.quality_average, 0), COALESCE(cs.ascensionist_count, 0),
+			c.is_no_match, c.created_at
+		FROM climbs c
+		LEFT JOIN climb_stats cs ON cs.climb_uuid = c.uuid AND cs.angle = %d
+		LEFT JOIN difficulty_grades dg ON dg.difficulty = CAST(ROUND(cs.display_difficulty) AS INTEGER)
+		WHERE c.setter_username = ? AND c.is_listed = 1
+		ORDER BY COALESCE(cs.ascensionist_count, 0) DESC
+		LIMIT ?`, angle), username, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var climbs []models.ClimbSummary
+	for rows.Next() {
+		var cs models.ClimbSummary
+		if err := rows.Scan(&cs.UUID, &cs.Name, &cs.SetterUsername, &cs.IsDraft,
+			&cs.Angle, &cs.DisplayDifficulty, &cs.Grade,
+			&cs.QualityAverage, &cs.AscentionistCount, &cs.IsNoMatch, &cs.CreatedAt); err != nil {
+			return nil, err
+		}
+		climbs = append(climbs, cs)
+	}
+	return climbs, rows.Err()
+}
+
+func (s *ClimbStore) GetByUUID(uuid string, angle *int) (*models.ClimbDetail, error) {
 	var c models.Climb
 	var createdAt string
 	err := s.db.QueryRow(`
@@ -174,19 +304,40 @@ func (s *ClimbStore) GetByUUID(uuid string) (*models.ClimbDetail, error) {
 		Placements: placements,
 	}
 
-	var stats models.ClimbStats
+	var setAngle int
 	err = s.db.QueryRow(`
-		SELECT cs.climb_uuid, cs.angle, cs.display_difficulty,
-			COALESCE(dg.boulder_name, ''),
-			cs.quality_average, cs.ascensionist_count, cs.difficulty_average
-		FROM climb_stats cs
-		LEFT JOIN difficulty_grades dg ON dg.difficulty = CAST(ROUND(cs.display_difficulty) AS INTEGER)
-		WHERE cs.climb_uuid = ?
-		ORDER BY cs.ascensionist_count DESC
-		LIMIT 1`, uuid).Scan(
-		&stats.ClimbUUID, &stats.Angle, &stats.DisplayDifficulty,
-		&stats.Grade, &stats.QualityAverage, &stats.AscentionistCount,
-		&stats.DifficultyAverage)
+		SELECT angle FROM climb_stats
+		WHERE climb_uuid = ? ORDER BY ascensionist_count DESC LIMIT 1`, uuid).Scan(&setAngle)
+	if err == nil {
+		detail.SetAngle = &setAngle
+	}
+
+	var stats models.ClimbStats
+	if angle != nil {
+		err = s.db.QueryRow(`
+			SELECT cs.climb_uuid, cs.angle, cs.display_difficulty,
+				COALESCE(dg.boulder_name, ''),
+				cs.quality_average, cs.ascensionist_count, cs.difficulty_average
+			FROM climb_stats cs
+			LEFT JOIN difficulty_grades dg ON dg.difficulty = CAST(ROUND(cs.display_difficulty) AS INTEGER)
+			WHERE cs.climb_uuid = ? AND cs.angle = ?`, uuid, *angle).Scan(
+			&stats.ClimbUUID, &stats.Angle, &stats.DisplayDifficulty,
+			&stats.Grade, &stats.QualityAverage, &stats.AscentionistCount,
+			&stats.DifficultyAverage)
+	} else {
+		err = s.db.QueryRow(`
+			SELECT cs.climb_uuid, cs.angle, cs.display_difficulty,
+				COALESCE(dg.boulder_name, ''),
+				cs.quality_average, cs.ascensionist_count, cs.difficulty_average
+			FROM climb_stats cs
+			LEFT JOIN difficulty_grades dg ON dg.difficulty = CAST(ROUND(cs.display_difficulty) AS INTEGER)
+			WHERE cs.climb_uuid = ?
+			ORDER BY cs.ascensionist_count DESC
+			LIMIT 1`, uuid).Scan(
+			&stats.ClimbUUID, &stats.Angle, &stats.DisplayDifficulty,
+			&stats.Grade, &stats.QualityAverage, &stats.AscentionistCount,
+			&stats.DifficultyAverage)
+	}
 	if err == nil {
 		detail.Stats = &stats
 	}
@@ -194,25 +345,27 @@ func (s *ClimbStore) GetByUUID(uuid string) (*models.ClimbDetail, error) {
 	return detail, nil
 }
 
-func (s *ClimbStore) Create(req models.ClimbCreateRequest, uuid string) (*models.Climb, error) {
+func (s *ClimbStore) Create(req models.ClimbCreateRequest, uuid, setterUsername string) (*models.Climb, error) {
 	now := time.Now().UTC().Format("2006-01-02 15:04:05")
 	isNoMatch := strings.Contains(strings.ToLower(req.Description), "no match")
 	_, err := s.db.Exec(`
-		INSERT INTO climbs (uuid, layout_id, name, description, frames, is_draft, is_listed, is_no_match, created_at)
-		VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?)`,
-		uuid, req.LayoutID, req.Name, req.Description, req.Frames, isNoMatch, now)
+		INSERT INTO climbs (uuid, layout_id, setter_id, setter_username, name, description, frames, is_draft, is_listed, is_no_match, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?)`,
+		uuid, req.LayoutID, req.SetterID, setterUsername, req.Name, req.Description, req.Frames, isNoMatch, now)
 	if err != nil {
 		return nil, err
 	}
 	return &models.Climb{
-		UUID:        uuid,
-		LayoutID:    req.LayoutID,
-		Name:        req.Name,
-		Description: req.Description,
-		Frames:      req.Frames,
-		IsDraft:     true,
-		IsNoMatch:   isNoMatch,
-		CreatedAt:   time.Now().UTC(),
+		UUID:           uuid,
+		LayoutID:       req.LayoutID,
+		SetterID:       req.SetterID,
+		SetterUsername: setterUsername,
+		Name:           req.Name,
+		Description:    req.Description,
+		Frames:         req.Frames,
+		IsDraft:        true,
+		IsNoMatch:      isNoMatch,
+		CreatedAt:      time.Now().UTC(),
 	}, nil
 }
 
@@ -228,11 +381,23 @@ func (s *ClimbStore) Publish(uuid string, req models.ClimbPublishRequest) error 
 		return fmt.Errorf("climb %s not found", uuid)
 	}
 
+	// Resolve the V-grade index to a display_difficulty value from the grades table.
+	// The frontend sends a grade label like "V3"; we find the matching difficulty value.
+	gradeName := fmt.Sprintf("V%d", req.Grade)
+	var displayDifficulty float64
+	err = s.db.QueryRow(
+		`SELECT difficulty FROM difficulty_grades
+		 WHERE boulder_name LIKE ? ORDER BY difficulty ASC LIMIT 1`,
+		"%"+gradeName).Scan(&displayDifficulty)
+	if err != nil {
+		displayDifficulty = float64(req.Grade)
+	}
+
 	_, err = s.db.Exec(`
 		INSERT INTO climb_stats (climb_uuid, angle, display_difficulty)
 		VALUES (?, ?, ?)
 		ON CONFLICT(climb_uuid, angle) DO UPDATE SET
 			display_difficulty = excluded.display_difficulty`,
-		uuid, req.Angle, req.Grade)
+		uuid, req.Angle, displayDifficulty)
 	return err
 }

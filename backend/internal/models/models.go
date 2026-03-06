@@ -108,6 +108,7 @@ type PlacementFull struct {
 // ClimbDetail is the full response for a single climb, including decoded placements.
 type ClimbDetail struct {
 	Climb
+	SetAngle   *int             `json:"set_angle,omitempty"`
 	Stats      *ClimbStats      `json:"stats,omitempty"`
 	Placements []ClimbPlacement `json:"placements"`
 }
@@ -124,6 +125,7 @@ type ClimbSummary struct {
 	QualityAverage    float64 `json:"quality_average,omitempty"`
 	AscentionistCount int     `json:"ascensionist_count,omitempty"`
 	IsNoMatch         bool    `json:"is_no_match"`
+	CreatedAt         string  `json:"created_at,omitempty"`
 }
 
 type User struct {
@@ -192,6 +194,7 @@ type MonthCount struct {
 // ClimbCreateRequest is the payload for creating a new climb.
 type ClimbCreateRequest struct {
 	LayoutID    int    `json:"layout_id"`
+	SetterID    int    `json:"setter_id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Frames      string `json:"frames"`
@@ -202,4 +205,34 @@ type ClimbPublishRequest struct {
 	Name  string `json:"name"`
 	Grade int    `json:"grade"`
 	Angle int    `json:"angle"`
+}
+
+type List struct {
+	ID        int       `json:"id"`
+	UserID    int       `json:"user_id"`
+	Name      string    `json:"name"`
+	Color     string    `json:"color"`
+	ItemCount int       `json:"item_count"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type ListDetail struct {
+	List
+	Items []ClimbSummary `json:"items"`
+}
+
+type ListMembership struct {
+	ListID   int    `json:"list_id"`
+	Name     string `json:"name"`
+	Color    string `json:"color"`
+	Contains bool   `json:"contains"`
+}
+
+type ListCreateRequest struct {
+	Name  string `json:"name"`
+	Color string `json:"color"`
+}
+
+type ListItemRequest struct {
+	ClimbUUID string `json:"climb_uuid"`
 }

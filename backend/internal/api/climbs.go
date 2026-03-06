@@ -15,9 +15,13 @@ import (
 
 func (s *Server) ListClimbs(w http.ResponseWriter, r *http.Request) {
 	params := store.ClimbListParams{
-		Name:   r.URL.Query().Get("name"),
-		Cursor: r.URL.Query().Get("cursor"),
-		Limit:  intParam(r, "limit", 20),
+		Name:       r.URL.Query().Get("name"),
+		SetterName: r.URL.Query().Get("setter"),
+		UserFilter: r.URL.Query().Get("user_filter"),
+		Sort:       r.URL.Query().Get("sort"),
+		Order:      r.URL.Query().Get("order"),
+		Cursor:     r.URL.Query().Get("cursor"),
+		Limit:      intParam(r, "limit", 20),
 	}
 
 	if v := r.URL.Query().Get("grade_min"); v != "" {
@@ -38,9 +42,21 @@ func (s *Server) ListClimbs(w http.ResponseWriter, r *http.Request) {
 			params.Angle = &i
 		}
 	}
+	if v := r.URL.Query().Get("set_angle"); v != "" {
+		i, err := strconv.Atoi(v)
+		if err == nil {
+			params.SetAngle = &i
+		}
+	}
 	if v := r.URL.Query().Get("no_match"); v != "" {
 		b := v == "true" || v == "1"
 		params.NoMatch = &b
+	}
+	if v := r.URL.Query().Get("user_id"); v != "" {
+		i, err := strconv.Atoi(v)
+		if err == nil {
+			params.UserID = &i
+		}
 	}
 
 	climbs, nextCursor, err := s.ClimbStore.List(params)
@@ -60,7 +76,13 @@ func (s *Server) ListClimbs(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetClimb(w http.ResponseWriter, r *http.Request) {
 	uuid := chi.URLParam(r, "uuid")
-	climb, err := s.ClimbStore.GetByUUID(uuid)
+	var anglePtr *int
+	if v := r.URL.Query().Get("angle"); v != "" {
+		if a, err := strconv.Atoi(v); err == nil {
+			anglePtr = &a
+		}
+	}
+	climb, err := s.ClimbStore.GetByUUID(uuid, anglePtr)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -87,8 +109,16 @@ func (s *Server) CreateClimb(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var setterUsername string
+	if req.SetterID > 0 {
+		u, err := s.UserStore.GetByID(req.SetterID)
+		if err == nil && u != nil {
+			setterUsername = u.Username
+		}
+	}
+
 	uuid := generateUUID()
-	climb, err := s.ClimbStore.Create(req, uuid)
+	climb, err := s.ClimbStore.Create(req, uuid, setterUsername)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -146,7 +176,7 @@ func (s *Server) ListLayouts(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) SendToBoard(w http.ResponseWriter, r *http.Request) {
 	uuid := chi.URLParam(r, "uuid")
-	climb, err := s.ClimbStore.GetByUUID(uuid)
+	climb, err := s.ClimbStore.GetByUUID(uuid, nil)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

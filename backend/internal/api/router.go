@@ -15,6 +15,7 @@ type Server struct {
 	BoardStore   *store.BoardStore
 	UserStore    *store.UserStore
 	AscentStore  *store.AscentStore
+	ListStore    *store.ListStore
 	BTController bluetooth.BoardController
 }
 
@@ -39,7 +40,20 @@ func NewRouter(s *Server) http.Handler {
 		r.Get("/users/by-username/{username}", s.GetUserByUsername)
 		r.Get("/users/{id}/ascents", s.ListUserAscents)
 		r.Get("/users/{id}/stats", s.GetUserStats)
+		r.Get("/users/{id}/climbs-set", s.ListUserSetClimbs)
 		r.Get("/users/{id}/climb-summary/{uuid}", s.UserClimbSummary)
+		r.Get("/users/search", s.SearchUsers)
+		r.Get("/users/{id}/following", s.ListFollowing)
+		r.Post("/users/{id}/following", s.FollowUser)
+		r.Delete("/users/{id}/following/{followedId}", s.UnfollowUser)
+		r.Get("/users/{id}/following/{followedId}", s.IsFollowing)
+		r.Get("/users/{id}/lists", s.ListUserLists)
+		r.Post("/users/{id}/lists", s.CreateList)
+		r.Get("/users/{id}/lists/for-climb/{uuid}", s.ListsForClimb)
+
+		r.Get("/lists/{id}", s.GetList)
+		r.Post("/lists/{id}/items", s.AddListItem)
+		r.Delete("/lists/{id}/items/{uuid}", s.RemoveListItem)
 
 		r.Get("/grades", s.ListGrades)
 

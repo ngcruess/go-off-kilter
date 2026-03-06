@@ -170,6 +170,134 @@ func (s *Server) GetUserStats(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, stats)
 }
 
+func (s *Server) SearchUsers(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	if q == "" {
+		writeJSON(w, http.StatusOK, []models.User{})
+		return
+	}
+	users, err := s.UserStore.Search(q, intParam(r, "limit", 20))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if users == nil {
+		users = []models.User{}
+	}
+	writeJSON(w, http.StatusOK, users)
+}
+
+func (s *Server) FollowUser(w http.ResponseWriter, r *http.Request) {
+	followerID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	var req struct {
+		FollowedID int `json:"followed_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.FollowedID == 0 {
+		writeError(w, http.StatusBadRequest, "followed_id is required")
+		return
+	}
+	if followerID == req.FollowedID {
+		writeError(w, http.StatusBadRequest, "cannot follow yourself")
+		return
+	}
+	if err := s.UserStore.Follow(followerID, req.FollowedID); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "followed"})
+}
+
+func (s *Server) UnfollowUser(w http.ResponseWriter, r *http.Request) {
+	followerID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	followedID, err := strconv.Atoi(chi.URLParam(r, "followedId"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid followed user id")
+		return
+	}
+	if err := s.UserStore.Unfollow(followerID, followedID); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "unfollowed"})
+}
+
+func (s *Server) ListFollowing(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	users, err := s.UserStore.ListFollowing(userID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if users == nil {
+		users = []models.User{}
+	}
+	writeJSON(w, http.StatusOK, users)
+}
+
+func (s *Server) IsFollowing(w http.ResponseWriter, r *http.Request) {
+	followerID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	followedID, err := strconv.Atoi(chi.URLParam(r, "followedId"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid followed user id")
+		return
+	}
+	following, err := s.UserStore.IsFollowing(followerID, followedID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"following": following})
+}
+
+func (s *Server) ListUserSetClimbs(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	user, err := s.UserStore.GetByID(userID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if user == nil {
+		writeError(w, http.StatusNotFound, "user not found")
+		return
+	}
+	angle := intParam(r, "angle", 40)
+	limit := intParam(r, "limit", 20)
+
+	climbs, err := s.ClimbStore.ListBySetter(user.Username, angle, limit)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if climbs == nil {
+		climbs = []models.ClimbSummary{}
+	}
+	writeJSON(w, http.StatusOK, climbs)
+}
+
 func (s *Server) UserClimbSummary(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {

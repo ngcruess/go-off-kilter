@@ -30,6 +30,7 @@ func main() {
 		BoardStore:   store.NewBoardStore(db),
 		UserStore:    store.NewUserStore(db),
 		AscentStore:  store.NewAscentStore(db),
+		ListStore:    store.NewListStore(db),
 		BTController: bluetooth.NewMockController(),
 	}
 
