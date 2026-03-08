@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   View,
@@ -41,6 +41,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [showAnglePicker, setShowAnglePicker] = useState(false);
   const [showListPicker, setShowListPicker] = useState(false);
   const [newListName, setNewListName] = useState('');
+  const [newListColor, setNewListColor] = useState(colors.listPalette[0]);
 
   const [sendModalVisible, setSendModalVisible] = useState(false);
   const [selectedGrade, setSelectedGrade] = useState<number | null>(null);
@@ -58,6 +59,18 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     queryFn: fetchGrades,
     staleTime: Infinity,
   });
+
+  const gradeOptions = useMemo(() => {
+    if (!gradesQuery.data) return [];
+    const seen = new Map<string, { label: string; difficulty: number }>();
+    for (const g of gradesQuery.data) {
+      const label = extractGrade(g.boulder_name, gradeSystem);
+      if (!seen.has(label)) {
+        seen.set(label, { label, difficulty: g.difficulty });
+      }
+    }
+    return Array.from(seen.values());
+  }, [gradesQuery.data, gradeSystem]);
 
   const layoutQuery = useQuery({
     queryKey: ['layout', climbQuery.data?.layout_id],
@@ -87,10 +100,11 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   });
 
   const createNewList = useMutation({
-    mutationFn: (name: string) => createList(user!.id, name),
+    mutationFn: ({ name, color }: { name: string; color: string }) => createList(user!.id, name, color),
     onSuccess: async (newList) => {
       await addToList(newList.id, uuid);
       setNewListName('');
+      setNewListColor(colors.listPalette[0]);
       queryClient.invalidateQueries({ queryKey: ['lists-for-climb', user?.id, uuid] });
       queryClient.invalidateQueries({ queryKey: ['user-lists'] });
     },
@@ -192,10 +206,14 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const openSendModal = () => {
     const communityDifficulty = climbQuery.data?.stats?.display_difficulty;
-    if (communityDifficulty && gradesQuery.data) {
-      const rounded = Math.round(communityDifficulty);
-      const match = gradesQuery.data.find((g) => g.difficulty === rounded);
-      if (match) setSelectedGrade(match.difficulty);
+    if (communityDifficulty && gradeOptions.length > 0) {
+      let closest = gradeOptions[0];
+      for (const g of gradeOptions) {
+        if (Math.abs(g.difficulty - communityDifficulty) < Math.abs(closest.difficulty - communityDifficulty)) {
+          closest = g;
+        }
+      }
+      setSelectedGrade(closest.difficulty);
     }
     setSendModalVisible(true);
   };
@@ -276,53 +294,44 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <Text style={styles.grade}>{grade}</Text>
         </View>
 
-        {climb.setter_username ? (
-          <Text style={styles.setter}>
-            Set by {climb.setter_username}
-            {climb.set_angle != null ? ` at ${climb.set_angle}\u00B0` : ''}
-          </Text>
-        ) : null}
+        <View style={styles.setterRow}>
+          {climb.setter_username ? (
+            <Text style={styles.setter}>
+              Set by {climb.setter_username}
+              {climb.set_angle != null ? ` at ${climb.set_angle}\u00B0` : ''}
+            </Text>
+          ) : null}
+          <View style={[styles.matchBadge, climb.is_no_match ? styles.matchBadgeDanger : styles.matchBadgeSuccess]}>
+            <Text style={[styles.matchText, climb.is_no_match ? styles.matchTextDanger : styles.matchTextSuccess]}>
+              {climb.is_no_match ? 'No Match' : 'Match OK'}
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.statsContainer}>
           <View style={styles.statsLeft}>
-            {climb.stats?.ascensionist_count ? (
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Sends</Text>
-                <Text style={styles.statValue}>{climb.stats.ascensionist_count}</Text>
-              </View>
-            ) : null}
-            {qualityAvg ? (
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Quality</Text>
-                <Text style={styles.statValue}>{'\u2605'} {Math.round(qualityAvg)}</Text>
-              </View>
-            ) : null}
-            {climb.is_no_match ? (
-              <View style={styles.noMatchBadge}>
-                <Text style={styles.noMatchText}>No Match</Text>
-              </View>
-            ) : null}
-          </View>
-          {summary && (summary.attempts > 0 || summary.sends > 0) ? (
-            <>
-            <View style={styles.statsDivider} />
-            <View style={styles.statsRight}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabelGreen}>Your Sends</Text>
-                <Text style={styles.statValueGreen}>{summary.sends}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabelGreen}>Attempts</Text>
-                <Text style={styles.statValueGreen}>{summary.attempts}</Text>
-              </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Sends</Text>
+              <Text style={styles.statValue}>{climb.stats?.ascensionist_count ?? 0}</Text>
             </View>
-            </>
-          ) : null}
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Quality</Text>
+              <Text style={styles.statValue}>{qualityAvg ? `\u2605 ${Math.round(qualityAvg)}` : '??'}</Text>
+            </View>
+          </View>
+          <View style={styles.statsDivider} />
+          <View style={styles.statsRight}>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabelGreen}>Your Sends</Text>
+              <Text style={styles.statValueGreen}>{summary?.sends ?? 0}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabelGreen}>Attempts</Text>
+              <Text style={styles.statValueGreen}>{summary?.attempts ?? 0}</Text>
+            </View>
+          </View>
         </View>
 
-        {climb.description ? (
-          <Text style={styles.description}>{climb.description}</Text>
-        ) : null}
         <View style={styles.logRow}>
           <TouchableOpacity
             style={[styles.logButton, styles.logAttemptButton]}
@@ -360,19 +369,19 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             <Text style={styles.modalTitle}>Log Send</Text>
 
             <Text style={styles.modalLabel}>Proposed Grade</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gradeScroll}>
-              {(gradesQuery.data ?? []).map((g: DifficultyGrade) => (
+            <View style={styles.gradeGrid}>
+              {gradeOptions.map((g) => (
                 <TouchableOpacity
-                  key={g.difficulty}
+                  key={g.label}
                   style={[styles.gradeChip, selectedGrade === g.difficulty && styles.gradeChipActive]}
                   onPress={() => setSelectedGrade(g.difficulty)}
                 >
                   <Text style={[styles.gradeChipText, selectedGrade === g.difficulty && styles.gradeChipTextActive]}>
-                    {extractGrade(g.boulder_name, gradeSystem)}
+                    {g.label}
                   </Text>
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </View>
 
             <Text style={styles.modalLabel}>Quality</Text>
             <View style={styles.qualityRow}>
@@ -469,6 +478,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   <View style={[styles.listCheckbox, m.contains && styles.listCheckboxActive]}>
                     {m.contains && <Text style={styles.listCheckmark}>{'\u2713'}</Text>}
                   </View>
+                  <View style={[styles.listColorDot, { backgroundColor: m.color || colors.accent }]} />
                   <Text style={styles.listRowText}>{m.name}</Text>
                 </TouchableOpacity>
               ))}
@@ -486,16 +496,35 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             />
             <TouchableOpacity
               style={[styles.newListButton, !newListName.trim() && { opacity: 0.4 }]}
-              onPress={() => newListName.trim() && createNewList.mutate(newListName.trim())}
+              onPress={() => newListName.trim() && createNewList.mutate({ name: newListName.trim(), color: newListColor })}
               disabled={!newListName.trim() || createNewList.isPending}
             >
               <Text style={styles.newListButtonText}>Create</Text>
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.modalCancel} onPress={() => setShowListPicker(false)}>
-            <Text style={styles.modalCancelText}>Done</Text>
-          </TouchableOpacity>
+          <View style={styles.colorPickerRow}>
+            {colors.listPalette.map((c) => (
+              <TouchableOpacity
+                key={c}
+                onPress={() => setNewListColor(c)}
+                style={[
+                  styles.colorPickerSwatch,
+                  { backgroundColor: c },
+                  newListColor === c && styles.colorPickerSwatchActive,
+                ]}
+              />
+            ))}
+          </View>
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={styles.modalCancel} onPress={() => setShowListPicker(false)}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalSubmit} onPress={() => setShowListPicker(false)}>
+              <Text style={styles.modalSubmitText}>Done</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -513,7 +542,8 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   name: { color: colors.textPrimary, fontSize: 24, fontWeight: '700', flex: 1, marginRight: 12 },
   grade: { color: colors.accent, fontSize: 24, fontWeight: '800', fontStyle: 'italic' },
-  setter: { color: colors.textSecondary, fontSize: 14, marginBottom: 10 },
+  setterRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  setter: { color: colors.textSecondary, fontSize: 14 },
   statsContainer: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.surface, borderRadius: 10,
@@ -521,20 +551,20 @@ const styles = StyleSheet.create({
     borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.25)',
     borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)',
   },
-  statsLeft: { flex: 1, flexDirection: 'row', gap: 16, justifyContent: 'flex-end', paddingRight: 16 },
+  statsLeft: { flex: 1, flexDirection: 'row', gap: 16, justifyContent: 'center' },
   statsDivider: { width: 1, height: 28, backgroundColor: colors.textDisabled },
-  statsRight: { flex: 1, flexDirection: 'row', gap: 16, justifyContent: 'flex-start', paddingLeft: 16 },
+  statsRight: { flex: 1, flexDirection: 'row', gap: 16, justifyContent: 'center' },
   statItem: { alignItems: 'center' },
   statLabel: { color: colors.textSecondary, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
   statValue: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
   statLabelGreen: { color: colors.accentGreen, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
   statValueGreen: { color: colors.accentGreen, fontSize: 15, fontWeight: '600' },
-  noMatchBadge: {
-    backgroundColor: colors.errorBg, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6,
-    borderWidth: 1, borderColor: colors.errorBorder, justifyContent: 'center',
-  },
-  noMatchText: { color: colors.errorMuted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
-  description: { color: colors.textTertiary, fontSize: 14, lineHeight: 20, marginBottom: 4 },
+  matchBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  matchBadgeDanger: { backgroundColor: colors.error },
+  matchBadgeSuccess: { backgroundColor: colors.success },
+  matchText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  matchTextDanger: { color: colors.textPrimary },
+  matchTextSuccess: { color: colors.textPrimary },
   logRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   logButton: {
     flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center',
@@ -558,14 +588,14 @@ const styles = StyleSheet.create({
   },
   modalTitle: { color: colors.textPrimary, fontSize: 20, fontWeight: '700', marginBottom: 20, textAlign: 'center' },
   modalLabel: { color: colors.textSecondary, fontSize: 12, textTransform: 'uppercase', marginBottom: 8, marginTop: 12 },
-  gradeScroll: { flexGrow: 0, marginBottom: 4 },
+  gradeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
   gradeChip: {
-    backgroundColor: colors.chip, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6,
-    marginRight: 6, borderWidth: 1, borderColor: colors.borderMedium,
+    backgroundColor: colors.surface, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10,
+    minWidth: 56, alignItems: 'center',
   },
-  gradeChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  gradeChipText: { color: colors.textTertiary, fontSize: 13 },
-  gradeChipTextActive: { color: colors.textOnAccent },
+  gradeChipActive: { backgroundColor: colors.accent },
+  gradeChipText: { color: colors.textSecondary, fontSize: 14 },
+  gradeChipTextActive: { color: colors.textPrimary, fontWeight: '700' },
   qualityRow: { flexDirection: 'row', gap: 10 },
   qualityButton: {
     backgroundColor: colors.chip, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8,
@@ -580,14 +610,20 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
   modalCancel: {
     flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center',
-    backgroundColor: colors.border,
+    backgroundColor: colors.error,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3, shadowRadius: 3, elevation: 4,
   },
-  modalCancelText: { color: colors.textTertiary, fontSize: 15, fontWeight: '600' },
+  modalCancelText: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
   modalSubmit: {
     flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center',
     backgroundColor: colors.accentGreenBg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#5a9474',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3, shadowRadius: 3, elevation: 4,
   },
-  modalSubmitText: { color: colors.accent, fontSize: 15, fontWeight: '700' },
+  modalSubmitText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   angleModalOverlay: {
     flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center',
   },
@@ -624,6 +660,7 @@ const styles = StyleSheet.create({
   },
   listCheckboxActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   listCheckmark: { color: colors.textOnAccent, fontSize: 14, fontWeight: '700' },
+  listColorDot: { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
   listRowText: { color: colors.textPrimary, fontSize: 15 },
   newListRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   newListInput: {
@@ -635,4 +672,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   newListButtonText: { color: colors.textOnAccent, fontSize: 14, fontWeight: '700' },
+  colorPickerRow: {
+    flexDirection: 'row', gap: 8, marginBottom: 16,
+  },
+  colorPickerSwatch: {
+    width: 24, height: 24, borderRadius: 12,
+  },
+  colorPickerSwatchActive: {
+    borderWidth: 2.5, borderColor: colors.textPrimary,
+  },
 });

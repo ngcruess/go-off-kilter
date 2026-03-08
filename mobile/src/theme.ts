@@ -70,7 +70,7 @@ export const colors = {
   // Accent
   accent: '#6a88af',
   accentGreen: '#5a9474',
-  accentGreenBg: '#334d42',
+  accentGreenBg: '#3d6652',
 
   // Semantic
   error: '#ac5639',

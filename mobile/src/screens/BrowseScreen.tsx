@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import {
@@ -31,14 +31,16 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'name', label: 'Name' },
 ];
 
+const CHIP_WIDTH = 54;
+
 type Props = NativeStackScreenProps<RootStackParamList, 'Browse'>;
 
 export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
   const { user, angle, setAngle, gradeSystem, boardConnected, setBoardConnected } = useUser();
   const [search, setSearch] = useState('');
   const [setter, setSetter] = useState('');
-  const [gradeMin, setGradeMin] = useState<number | undefined>(undefined);
-  const [gradeMax, setGradeMax] = useState<number | undefined>(undefined);
+  const [gradeMinDiff, setGradeMinDiff] = useState<number | undefined>(undefined);
+  const [gradeMaxDiff, setGradeMaxDiff] = useState<number | undefined>(undefined);
   const [setAngleFilter, setSetAngleFilter] = useState<number | undefined>(undefined);
   const [noMatch, setNoMatch] = useState<boolean | undefined>(undefined);
   const [userFilter, setUserFilter] = useState<UserFilter>(undefined);
@@ -46,6 +48,9 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [showFilters, setShowFilters] = useState(false);
   const [showAnglePicker, setShowAnglePicker] = useState(false);
+
+  const minScrollRef = useRef<ScrollView>(null);
+  const maxScrollRef = useRef<ScrollView>(null);
 
   const gradesQuery = useQuery({
     queryKey: ['grades'],
@@ -69,25 +74,65 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
     return Array.from(seen.values());
   }, [gradesQuery.data, gradeSystem]);
 
+  const gradeMinIdx = useMemo(() => {
+    if (gradeMinDiff === undefined) return -1;
+    const exact = gradeFilterOptions.findIndex(g => g.min === gradeMinDiff);
+    if (exact !== -1) return exact;
+    let best = 0, bestDist = Infinity;
+    gradeFilterOptions.forEach((g, i) => {
+      const d = Math.abs(g.min - gradeMinDiff);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    return best;
+  }, [gradeMinDiff, gradeFilterOptions]);
+
+  const gradeMaxIdx = useMemo(() => {
+    if (gradeMaxDiff === undefined) return -1;
+    const exact = gradeFilterOptions.findIndex(g => g.max === gradeMaxDiff);
+    if (exact !== -1) return exact;
+    let best = 0, bestDist = Infinity;
+    gradeFilterOptions.forEach((g, i) => {
+      const d = Math.abs(g.max - gradeMaxDiff);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    return best;
+  }, [gradeMaxDiff, gradeFilterOptions]);
+
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (setter) count++;
-    if (gradeMin !== undefined) count++;
-    if (gradeMax !== undefined) count++;
+    if (gradeMinDiff !== undefined) count++;
+    if (gradeMaxDiff !== undefined) count++;
     if (setAngleFilter !== undefined) count++;
     if (noMatch !== undefined) count++;
     if (userFilter) count++;
     return count;
-  }, [setter, gradeMin, gradeMax, setAngleFilter, noMatch, userFilter]);
+  }, [setter, gradeMinDiff, gradeMaxDiff, setAngleFilter, noMatch, userFilter]);
 
   const clearFilters = useCallback(() => {
     setSetter('');
-    setGradeMin(undefined);
-    setGradeMax(undefined);
+    setGradeMinDiff(undefined);
+    setGradeMaxDiff(undefined);
     setSetAngleFilter(undefined);
     setNoMatch(undefined);
     setUserFilter(undefined);
   }, []);
+
+  const scrollToSelected = useCallback(() => {
+    setTimeout(() => {
+      if (gradeMinIdx >= 0 && minScrollRef.current) {
+        minScrollRef.current.scrollTo({ x: (gradeMinIdx + 1) * (CHIP_WIDTH + 6) - 40, animated: false });
+      }
+      if (gradeMaxIdx >= 0 && maxScrollRef.current) {
+        maxScrollRef.current.scrollTo({ x: (gradeMaxIdx + 1) * (CHIP_WIDTH + 6) - 40, animated: false });
+      }
+    }, 50);
+  }, [gradeMinIdx, gradeMaxIdx]);
+
+  const openFilters = useCallback(() => {
+    setShowFilters(true);
+    scrollToSelected();
+  }, [scrollToSelected]);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -144,13 +189,13 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['climbs', search, setter, gradeMin, gradeMax, angle, setAngleFilter, noMatch, userFilter, user?.id, sortKey, sortOrder, gradeSystem],
+    queryKey: ['climbs', search, setter, gradeMinDiff, gradeMaxDiff, angle, setAngleFilter, noMatch, userFilter, user?.id, sortKey, sortOrder, gradeSystem],
     queryFn: ({ pageParam }) =>
       fetchClimbs({
         name: search || undefined,
         setter: setter || undefined,
-        grade_min: gradeMin !== undefined ? gradeFilterOptions[gradeMin]?.min : undefined,
-        grade_max: gradeMax !== undefined ? gradeFilterOptions[gradeMax]?.max : undefined,
+        grade_min: gradeMinDiff,
+        grade_max: gradeMaxDiff,
         angle,
         set_angle: setAngleFilter,
         no_match: noMatch,
@@ -177,6 +222,9 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  const gradeLabel = (idx: number | undefined) =>
+    idx !== undefined && gradeFilterOptions[idx] ? gradeFilterOptions[idx].label : 'Any';
+
   return (
     <View style={styles.container}>
       <View style={styles.searchRow}>
@@ -190,13 +238,15 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
           autoCorrect={false}
         />
         <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setShowFilters(!showFilters)}
+          style={[styles.filterButton, activeFilterCount > 0 && styles.filterButtonActive]}
+          onPress={openFilters}
         >
-          <Text style={styles.filterButtonText}>
-            {showFilters ? 'Hide' : 'Filters'}
-            {!showFilters && activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-          </Text>
+          <MaterialCommunityIcons name="tune-variant" size={18} color={activeFilterCount > 0 ? colors.textPrimary : colors.accent} />
+          {activeFilterCount > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -221,102 +271,6 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         ))}
       </View>
-
-      {showFilters && (
-        <ScrollView style={styles.filterScroll} contentContainerStyle={styles.filterSection}>
-          <TextInput
-            style={styles.setterInput}
-            placeholder="Setter name..."
-            placeholderTextColor={colors.textMuted}
-            value={setter}
-            onChangeText={setSetter}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-
-          <Text style={styles.filterLabel}>Grade Range</Text>
-          <View style={styles.filterRow}>
-            <FilterPicker
-              label="Min"
-              options={gradeFilterOptions.map((g) => g.label)}
-              value={gradeMin}
-              onSelect={setGradeMin}
-            />
-            <FilterPicker
-              label="Max"
-              options={gradeFilterOptions.map((g) => g.label)}
-              value={gradeMax}
-              onSelect={setGradeMax}
-            />
-          </View>
-
-          <Text style={styles.filterLabel}>Set Angle</Text>
-          <View style={styles.chipRow}>
-            <TouchableOpacity
-              style={[styles.chip, setAngleFilter === undefined && styles.chipActive]}
-              onPress={() => setSetAngleFilter(undefined)}
-            >
-              <Text style={[styles.chipText, setAngleFilter === undefined && styles.chipTextActive]}>Any</Text>
-            </TouchableOpacity>
-            {ANGLES.map((a) => (
-              <TouchableOpacity
-                key={a}
-                style={[styles.chip, setAngleFilter === a && styles.chipActive]}
-                onPress={() => setSetAngleFilter(setAngleFilter === a ? undefined : a)}
-              >
-                <Text style={[styles.chipText, setAngleFilter === a && styles.chipTextActive]}>
-                  {a}{'\u00B0'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <Text style={styles.filterLabel}>My Activity</Text>
-          <View style={styles.chipRow}>
-            {([
-              { label: 'All', value: undefined as UserFilter },
-              { label: 'Attempted', value: 'attempted' as UserFilter },
-              { label: 'Sent', value: 'sent' as UserFilter },
-              { label: 'Not Sent', value: 'not_sent' as UserFilter },
-            ]).map((opt) => (
-              <TouchableOpacity
-                key={String(opt.value)}
-                style={[styles.matchChip, userFilter === opt.value && styles.matchChipActive]}
-                onPress={() => setUserFilter(opt.value)}
-              >
-                <Text style={[styles.matchChipText, userFilter === opt.value && styles.matchChipTextActive]}>
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <Text style={styles.filterLabel}>Matching</Text>
-          <View style={styles.chipRow}>
-            {([
-              { label: 'All', value: undefined as boolean | undefined },
-              { label: 'Match OK', value: false },
-              { label: 'No Match', value: true },
-            ]).map((opt) => (
-              <TouchableOpacity
-                key={String(opt.value)}
-                style={[styles.matchChip, noMatch === opt.value && styles.matchChipActive]}
-                onPress={() => setNoMatch(opt.value)}
-              >
-                <Text style={[styles.matchChipText, noMatch === opt.value && styles.matchChipTextActive]}>
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {activeFilterCount > 0 && (
-            <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
-              <Text style={styles.clearButtonText}>Clear All Filters</Text>
-            </TouchableOpacity>
-          )}
-        </ScrollView>
-      )}
 
       <View style={styles.listContainer}>
         {isLoading && !isFetchingNextPage && (
@@ -366,6 +320,167 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
+      {/* Filter Modal */}
+      <Modal
+        visible={showFilters}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowFilters(false)}
+      >
+        <View style={styles.filterOverlay}>
+          <View style={styles.filterModal}>
+            <View style={styles.filterHeader}>
+              <Text style={styles.filterTitle}>Filters</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                {activeFilterCount > 0 && (
+                  <TouchableOpacity onPress={clearFilters}>
+                    <Text style={styles.clearText}>Clear All</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => setShowFilters(false)}>
+                  <MaterialCommunityIcons name="close" size={22} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+              <Text style={styles.filterLabel}>Setter</Text>
+              <TextInput
+                style={styles.setterInput}
+                placeholder="Setter name..."
+                placeholderTextColor={colors.textMuted}
+                value={setter}
+                onChangeText={setSetter}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <Text style={styles.filterLabel}>Min Grade</Text>
+              <ScrollView
+                ref={minScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.gradeStrip}
+              >
+                <TouchableOpacity
+                  style={[styles.gradeChip, gradeMinDiff === undefined && styles.gradeChipActive]}
+                  onPress={() => setGradeMinDiff(undefined)}
+                >
+                  <Text style={[styles.gradeChipText, gradeMinDiff === undefined && styles.gradeChipTextActive]}>Any</Text>
+                </TouchableOpacity>
+                {gradeFilterOptions.map((g, idx) => (
+                  <TouchableOpacity
+                    key={g.label}
+                    style={[styles.gradeChip, gradeMinIdx === idx && styles.gradeChipActive]}
+                    onPress={() => setGradeMinDiff(g.min)}
+                  >
+                    <Text style={[styles.gradeChipText, gradeMinIdx === idx && styles.gradeChipTextActive]}>
+                      {g.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <Text style={styles.filterLabel}>Max Grade</Text>
+              <ScrollView
+                ref={maxScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.gradeStrip}
+              >
+                <TouchableOpacity
+                  style={[styles.gradeChip, gradeMaxDiff === undefined && styles.gradeChipActive]}
+                  onPress={() => setGradeMaxDiff(undefined)}
+                >
+                  <Text style={[styles.gradeChipText, gradeMaxDiff === undefined && styles.gradeChipTextActive]}>Any</Text>
+                </TouchableOpacity>
+                {gradeFilterOptions.map((g, idx) => (
+                  <TouchableOpacity
+                    key={g.label}
+                    style={[styles.gradeChip, gradeMaxIdx === idx && styles.gradeChipActive]}
+                    onPress={() => setGradeMaxDiff(g.max)}
+                  >
+                    <Text style={[styles.gradeChipText, gradeMaxIdx === idx && styles.gradeChipTextActive]}>
+                      {g.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <Text style={styles.filterLabel}>Set Angle</Text>
+              <View style={styles.angleFilterGrid}>
+                <TouchableOpacity
+                  style={[styles.angleFilterChip, setAngleFilter === undefined && styles.angleFilterChipActive]}
+                  onPress={() => setSetAngleFilter(undefined)}
+                >
+                  <Text style={[styles.angleFilterText, setAngleFilter === undefined && styles.angleFilterTextActive]}>Any</Text>
+                </TouchableOpacity>
+                {ANGLES.map((a) => (
+                  <TouchableOpacity
+                    key={a}
+                    style={[styles.angleFilterChip, setAngleFilter === a && styles.angleFilterChipActive]}
+                    onPress={() => setSetAngleFilter(setAngleFilter === a ? undefined : a)}
+                  >
+                    <Text style={[styles.angleFilterText, setAngleFilter === a && styles.angleFilterTextActive]}>
+                      {a}{'\u00B0'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.filterLabel}>My Activity</Text>
+              <View style={styles.optionRow}>
+                {([
+                  { label: 'All', value: undefined as UserFilter },
+                  { label: 'Attempted', value: 'attempted' as UserFilter },
+                  { label: 'Sent', value: 'sent' as UserFilter },
+                  { label: 'Not Sent', value: 'not_sent' as UserFilter },
+                ]).map((opt) => (
+                  <TouchableOpacity
+                    key={String(opt.value)}
+                    style={[styles.optionChip, userFilter === opt.value && styles.optionChipActive]}
+                    onPress={() => setUserFilter(opt.value)}
+                  >
+                    <Text style={[styles.optionChipText, userFilter === opt.value && styles.optionChipTextActive]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.filterLabel}>Matching</Text>
+              <View style={styles.optionRow}>
+                {([
+                  { label: 'All', value: undefined as boolean | undefined },
+                  { label: 'Match OK', value: false },
+                  { label: 'No Match', value: true },
+                ]).map((opt) => (
+                  <TouchableOpacity
+                    key={String(opt.value)}
+                    style={[styles.optionChip, noMatch === opt.value && styles.optionChipActive]}
+                    onPress={() => setNoMatch(opt.value)}
+                  >
+                    <Text style={[styles.optionChipText, noMatch === opt.value && styles.optionChipTextActive]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.applyButton}
+              onPress={() => setShowFilters(false)}
+            >
+              <Text style={styles.applyButtonText}>
+                Apply{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Board Angle Picker Modal */}
       <Modal
         visible={showAnglePicker}
         animationType="slide"
@@ -399,42 +514,6 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-interface FilterPickerProps {
-  label: string;
-  options: string[];
-  value: number | undefined;
-  onSelect: (value: number | undefined) => void;
-}
-
-const FilterPicker: React.FC<FilterPickerProps> = ({ label, options, value, onSelect }) => {
-  return (
-    <View style={styles.pickerContainer}>
-      <Text style={styles.pickerLabel}>{label}</Text>
-      <View style={styles.chipRow}>
-        <TouchableOpacity
-          style={[styles.chip, value === undefined && styles.chipActive]}
-          onPress={() => onSelect(undefined)}
-        >
-          <Text style={[styles.chipText, value === undefined && styles.chipTextActive]}>
-            Any
-          </Text>
-        </TouchableOpacity>
-        {options.map((opt, idx) => (
-          <TouchableOpacity
-            key={opt}
-            style={[styles.chip, value === idx && styles.chipActive]}
-            onPress={() => onSelect(idx)}
-          >
-            <Text style={[styles.chipText, value === idx && styles.chipTextActive]}>
-              {opt}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-};
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.pageBg },
   searchRow: { flexDirection: 'row', padding: 12, gap: 8 },
@@ -444,10 +523,16 @@ const styles = StyleSheet.create({
     fontSize: 15, borderWidth: 1, borderColor: colors.border,
   },
   filterButton: {
-    backgroundColor: colors.surfaceInput, borderRadius: 10, paddingHorizontal: 14,
-    justifyContent: 'center', borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surfaceInput, borderRadius: 10, paddingHorizontal: 12,
+    justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.border,
+    flexDirection: 'row', gap: 4,
   },
-  filterButtonText: { color: colors.accent, fontSize: 14, fontWeight: '600' },
+  filterButtonActive: { borderColor: colors.accent },
+  filterBadge: {
+    backgroundColor: colors.accent, borderRadius: 8, minWidth: 16, height: 16,
+    justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4,
+  },
+  filterBadgeText: { color: colors.textOnAccent, fontSize: 10, fontWeight: '700' },
   sortRow: {
     flexDirection: 'row', paddingHorizontal: 12, paddingBottom: 8, gap: 6,
   },
@@ -459,25 +544,73 @@ const styles = StyleSheet.create({
   sortChipActive: { backgroundColor: colors.chip, borderColor: colors.accent },
   sortChipText: { color: colors.textSecondary, fontSize: 13 },
   sortChipTextActive: { color: colors.accent, fontWeight: '600' },
-  filterScroll: { maxHeight: 320 },
-  filterSection: { paddingHorizontal: 12, paddingBottom: 12 },
+
+  // Filter modal
+  filterOverlay: {
+    flex: 1, backgroundColor: colors.overlayDark, justifyContent: 'flex-end',
+  },
+  filterModal: {
+    backgroundColor: colors.surfaceRaised, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 30, maxHeight: '85%',
+  },
+  filterHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: 12,
+  },
+  filterTitle: { color: colors.textPrimary, fontSize: 20, fontWeight: '700' },
+  clearText: { color: colors.error, fontSize: 14, fontWeight: '600' },
   filterLabel: {
     color: colors.textSecondary, fontSize: 12, fontWeight: '600',
-    textTransform: 'uppercase', marginBottom: 6, marginTop: 12,
+    textTransform: 'uppercase', marginBottom: 8, marginTop: 16,
   },
-  filterRow: { flexDirection: 'row', gap: 12 },
   setterInput: {
-    backgroundColor: colors.surfaceInput, borderRadius: 10,
-    paddingHorizontal: 14, paddingVertical: 8, color: colors.textPrimary,
-    fontSize: 14, borderWidth: 1, borderColor: colors.border, marginTop: 4,
+    backgroundColor: colors.surface, borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 10, color: colors.textPrimary,
+    fontSize: 14,
   },
-  clearButton: {
-    alignSelf: 'center', marginTop: 14,
-    paddingHorizontal: 20, paddingVertical: 8,
-    borderRadius: 8, borderWidth: 1, borderColor: colors.error,
+
+  // Grade strip chips
+  gradeStrip: { flexDirection: 'row', gap: 6, paddingVertical: 2 },
+  gradeChip: {
+    backgroundColor: colors.surface, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8, minWidth: CHIP_WIDTH, alignItems: 'center',
   },
-  clearButtonText: { color: colors.error, fontSize: 13, fontWeight: '600' },
+  gradeChipActive: { backgroundColor: colors.accent },
+  gradeChipText: { color: colors.textSecondary, fontSize: 14, fontWeight: '500' },
+  gradeChipTextActive: { color: colors.textOnAccent, fontWeight: '700' },
+
+  // Angle filter grid (4 columns)
+  angleFilterGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 8,
+  },
+  angleFilterChip: {
+    backgroundColor: colors.surface, borderRadius: 10,
+    paddingVertical: 10, minWidth: 68, alignItems: 'center',
+  },
+  angleFilterChipActive: { backgroundColor: colors.accent },
+  angleFilterText: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
+  angleFilterTextActive: { color: colors.textOnAccent, fontWeight: '700' },
+
+  // Activity / matching chips
+  optionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  optionChip: {
+    backgroundColor: colors.surface, borderRadius: 10,
+    paddingHorizontal: 16, paddingVertical: 10,
+  },
+  optionChipActive: { backgroundColor: colors.accent },
+  optionChipText: { color: colors.textSecondary, fontSize: 14, fontWeight: '500' },
+  optionChipTextActive: { color: colors.textOnAccent, fontWeight: '700' },
+
+  // Apply button
+  applyButton: {
+    backgroundColor: colors.accent, borderRadius: 12,
+    paddingVertical: 14, alignItems: 'center', marginTop: 12,
+  },
+  applyButtonText: { color: colors.textOnAccent, fontSize: 16, fontWeight: '700' },
+
   listContainer: { flex: 1 },
+
+  // Board angle picker modal (unchanged)
   angleModalOverlay: {
     flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center',
   },
@@ -491,23 +624,7 @@ const styles = StyleSheet.create({
   angleOptionActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   angleOptionText: { color: colors.textTertiary, fontSize: 15, fontWeight: '600' },
   angleOptionTextActive: { color: colors.textPrimary },
-  pickerContainer: { flex: 1 },
-  pickerLabel: { color: colors.textSecondary, fontSize: 12, marginBottom: 4 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  chip: {
-    backgroundColor: colors.surfaceInput, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  chipText: { color: colors.textSecondary, fontSize: 12 },
-  chipTextActive: { color: colors.textPrimary, fontWeight: '600' },
-  matchChip: {
-    backgroundColor: colors.surfaceInput, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  matchChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  matchChipText: { color: colors.textSecondary, fontSize: 13 },
-  matchChipTextActive: { color: colors.textPrimary, fontWeight: '600' },
+
   list: { paddingVertical: 8 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   errorText: { color: colors.error, fontSize: 16, fontWeight: '600' },
