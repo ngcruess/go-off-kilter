@@ -9,23 +9,39 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { publishClimb } from '../api/client';
-import { GRADE_LABELS, ANGLES } from '../types';
+import { publishClimb, fetchGrades } from '../api/client';
+import { ANGLES, DifficultyGrade, extractGrade } from '../types';
+import { useUser } from '../context/UserContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Publish'>;
 
 export const PublishScreen: React.FC<Props> = ({ route, navigation }) => {
   const { uuid } = route.params;
+  const { angle: sessionAngle, gradeSystem } = useUser();
   const [name, setName] = useState('');
-  const [gradeIdx, setGradeIdx] = useState(3);
-  const [angle, setAngle] = useState(40);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<number | null>(null);
+  const [angle, setAngle] = useState(sessionAngle);
   const [publishing, setPublishing] = useState(false);
+
+  const gradesQuery = useQuery({
+    queryKey: ['grades'],
+    queryFn: fetchGrades,
+    staleTime: Infinity,
+  });
+
+  const grades = gradesQuery.data ?? [];
+  const selectedGrade = grades.find((g: DifficultyGrade) => g.difficulty === selectedDifficulty);
 
   const handlePublish = async () => {
     if (!name.trim()) {
       Alert.alert('Name required', 'Give your problem a name.');
+      return;
+    }
+    if (selectedDifficulty === null) {
+      Alert.alert('Grade required', 'Select a proposed grade.');
       return;
     }
 
@@ -33,7 +49,7 @@ export const PublishScreen: React.FC<Props> = ({ route, navigation }) => {
     try {
       await publishClimb(uuid, {
         name: name.trim(),
-        grade: gradeIdx,
+        difficulty: selectedDifficulty,
         angle,
       });
       Alert.alert('Published', 'Your problem is now public.', [
@@ -60,21 +76,21 @@ export const PublishScreen: React.FC<Props> = ({ route, navigation }) => {
       />
 
       <Text style={styles.sectionTitle}>Proposed Grade</Text>
-      <View style={styles.gradeGrid}>
-        {GRADE_LABELS.map((label, idx) => (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gradeScroll}>
+        {grades.map((g: DifficultyGrade) => (
           <TouchableOpacity
-            key={label}
-            style={[styles.gradeChip, gradeIdx === idx && styles.gradeChipActive]}
-            onPress={() => setGradeIdx(idx)}
+            key={g.difficulty}
+            style={[styles.gradeChip, selectedDifficulty === g.difficulty && styles.gradeChipActive]}
+            onPress={() => setSelectedDifficulty(g.difficulty)}
           >
             <Text
-              style={[styles.gradeChipText, gradeIdx === idx && styles.gradeChipTextActive]}
+              style={[styles.gradeChipText, selectedDifficulty === g.difficulty && styles.gradeChipTextActive]}
             >
-              {label}
+              {extractGrade(g.boulder_name, gradeSystem)}
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       <Text style={styles.sectionTitle}>Angle (degrees)</Text>
       <View style={styles.angleGrid}>
@@ -93,14 +109,14 @@ export const PublishScreen: React.FC<Props> = ({ route, navigation }) => {
 
       <View style={styles.summary}>
         <Text style={styles.summaryText}>
-          {name || '(untitled)'} · {GRADE_LABELS[gradeIdx]} @ {angle}°
+          {name || '(untitled)'} · {selectedGrade ? extractGrade(selectedGrade.boulder_name, gradeSystem) : '??'} @ {angle}°
         </Text>
       </View>
 
       <TouchableOpacity
-        style={[styles.publishButton, publishing && styles.publishButtonDisabled]}
+        style={[styles.publishButton, (publishing || selectedDifficulty === null) && styles.publishButtonDisabled]}
         onPress={handlePublish}
-        disabled={publishing}
+        disabled={publishing || selectedDifficulty === null}
       >
         {publishing ? (
           <ActivityIndicator size="small" color="#fff" />
@@ -140,10 +156,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
-  gradeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  gradeScroll: {
+    marginBottom: 4,
   },
   gradeChip: {
     backgroundColor: '#1e1e1e',
@@ -154,6 +168,7 @@ const styles = StyleSheet.create({
     borderColor: '#333',
     minWidth: 52,
     alignItems: 'center',
+    marginRight: 8,
   },
   gradeChipActive: {
     backgroundColor: '#42A5F5',

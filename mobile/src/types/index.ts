@@ -199,16 +199,12 @@ export const COLOR_HEX: Record<string, string> = {
   pink: '#E040FB',
 };
 
-export const GRADE_LABELS: string[] = [
-  'V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7',
-  'V8', 'V9', 'V10', 'V11', 'V12', 'V13', 'V14', 'V15', 'V16', 'V17',
-];
+export type GradeSystem = 'hueco' | 'font';
+
+export function extractGrade(boulderName: string, system: GradeSystem): string {
+  const parts = boulderName.split('/');
+  if (parts.length < 2) return boulderName;
+  return system === 'font' ? parts[0].trim() : parts[parts.length - 1].trim();
+}
 
 export const ANGLES: number[] = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
-
-export function difficultyToGrade(difficulty: number): string {
-  const index = Math.round(difficulty);
-  if (index < 0) return GRADE_LABELS[0];
-  if (index >= GRADE_LABELS.length) return GRADE_LABELS[GRADE_LABELS.length - 1];
-  return GRADE_LABELS[index];
-}

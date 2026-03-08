@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   View,
   FlatList,
@@ -15,7 +16,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { fetchClimbs, fetchGrades } from '../api/client';
 import { ProblemCard } from '../components/ProblemCard/ProblemCard';
-import { ClimbSummary, GRADE_LABELS, ANGLES } from '../types';
+import { ClimbSummary, ANGLES, extractGrade } from '../types';
 import { useUser } from '../context/UserContext';
 
 type UserFilter = 'attempted' | 'sent' | 'not_sent' | undefined;
@@ -32,7 +33,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 type Props = NativeStackScreenProps<RootStackParamList, 'Browse'>;
 
 export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
-  const { user, angle, setAngle } = useUser();
+  const { user, angle, setAngle, gradeSystem, boardConnected, setBoardConnected } = useUser();
   const [search, setSearch] = useState('');
   const [setter, setSetter] = useState('');
   const [gradeMin, setGradeMin] = useState<number | undefined>(undefined);
@@ -51,23 +52,21 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
     staleTime: Infinity,
   });
 
-  // Map V-grade number (0-14) to its difficulty range in the DB
-  const vGradeRanges = useMemo(() => {
-    if (!gradesQuery.data) return null;
-    const map: Record<number, { min: number; max: number }> = {};
+  const gradeFilterOptions = useMemo(() => {
+    if (!gradesQuery.data) return [];
+    const seen = new Map<string, { label: string; min: number; max: number }>();
     for (const g of gradesQuery.data) {
-      const m = g.boulder_name.match(/V(\d+)/);
-      if (!m) continue;
-      const v = parseInt(m[1], 10);
-      if (!map[v]) {
-        map[v] = { min: g.difficulty, max: g.difficulty };
+      const label = extractGrade(g.boulder_name, gradeSystem);
+      const existing = seen.get(label);
+      if (!existing) {
+        seen.set(label, { label, min: g.difficulty, max: g.difficulty });
       } else {
-        map[v].min = Math.min(map[v].min, g.difficulty);
-        map[v].max = Math.max(map[v].max, g.difficulty);
+        existing.min = Math.min(existing.min, g.difficulty);
+        existing.max = Math.max(existing.max, g.difficulty);
       }
     }
-    return map;
-  }, [gradesQuery.data]);
+    return Array.from(seen.values());
+  }, [gradesQuery.data, gradeSystem]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -94,13 +93,22 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <TouchableOpacity
+            onPress={() => setBoardConnected(!boardConnected)}
+            style={{
+              backgroundColor: '#2a2a2a', borderRadius: 14,
+              paddingHorizontal: 10, paddingVertical: 4,
+            }}
+          >
+            <MaterialCommunityIcons name="bluetooth" size={18} color={boardConnected ? '#00E5FF' : '#666'} />
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => setShowAnglePicker(true)}
             style={{
               backgroundColor: '#2a2a2a', borderRadius: 14,
               paddingHorizontal: 10, paddingVertical: 4,
             }}
           >
-            <Text style={{ color: '#42A5F5', fontSize: 14, fontWeight: '700' }}>{angle}{'\u00B0'}</Text>
+            <Text style={{ color: '#00E5FF', fontSize: 14, fontWeight: '700' }}>{angle}{'\u00B0'}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('Profile')}
@@ -125,7 +133,7 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       ),
     });
-  }, [navigation, angle, user]);
+  }, [navigation, angle, user, boardConnected]);
 
   const {
     data,
@@ -135,13 +143,13 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['climbs', search, setter, gradeMin, gradeMax, angle, setAngleFilter, noMatch, userFilter, user?.id, sortKey, sortOrder],
+    queryKey: ['climbs', search, setter, gradeMin, gradeMax, angle, setAngleFilter, noMatch, userFilter, user?.id, sortKey, sortOrder, gradeSystem],
     queryFn: ({ pageParam }) =>
       fetchClimbs({
         name: search || undefined,
         setter: setter || undefined,
-        grade_min: gradeMin !== undefined ? vGradeRanges?.[gradeMin]?.min : undefined,
-        grade_max: gradeMax !== undefined ? vGradeRanges?.[gradeMax]?.max : undefined,
+        grade_min: gradeMin !== undefined ? gradeFilterOptions[gradeMin]?.min : undefined,
+        grade_max: gradeMax !== undefined ? gradeFilterOptions[gradeMax]?.max : undefined,
         angle,
         set_angle: setAngleFilter,
         no_match: noMatch,
@@ -229,13 +237,13 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.filterRow}>
             <FilterPicker
               label="Min"
-              options={GRADE_LABELS.slice(0, 15)}
+              options={gradeFilterOptions.map((g) => g.label)}
               value={gradeMin}
               onSelect={setGradeMin}
             />
             <FilterPicker
               label="Max"
-              options={GRADE_LABELS.slice(0, 15)}
+              options={gradeFilterOptions.map((g) => g.label)}
               value={gradeMax}
               onSelect={setGradeMax}
             />

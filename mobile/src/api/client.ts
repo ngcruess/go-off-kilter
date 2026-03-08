@@ -85,7 +85,7 @@ export async function createClimb(data: {
 
 export async function publishClimb(
   uuid: string,
-  data: { name: string; grade: number; angle: number }
+  data: { name: string; difficulty: number; angle: number }
 ): Promise<void> {
   await request(`/climbs/${uuid}/publish`, {
     method: 'PUT',

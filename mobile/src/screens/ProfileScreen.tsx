@@ -14,14 +14,14 @@ import { RootStackParamList } from '../../App';
 import { fetchUserStats, fetchUserAscents, fetchUserSetClimbs } from '../api/client';
 import { useUser } from '../context/UserContext';
 import { BarChart, BarDatum } from '../components/BarChart/BarChart';
-import { AscentSummary, ClimbSummary } from '../types';
+import { AscentSummary, ClimbSummary, GradeSystem } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
 type ChartTab = 'grade' | 'angle' | 'time';
 
 export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
-  const { user, logout, angle } = useUser();
+  const { user, logout, angle, gradeSystem, setGradeSystem } = useUser();
   const [chartTab, setChartTab] = useState<ChartTab>('grade');
 
   const statsQuery = useQuery({
@@ -265,6 +265,23 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         )}
       </View>
 
+      <View style={styles.prefSection}>
+        <Text style={styles.prefTitle}>Grading System</Text>
+        <View style={styles.segmented}>
+          {(['hueco', 'font'] as GradeSystem[]).map((sys) => (
+            <TouchableOpacity
+              key={sys}
+              style={[styles.segBtn, gradeSystem === sys && styles.segBtnActive]}
+              onPress={() => setGradeSystem(sys)}
+            >
+              <Text style={[styles.segBtnText, gradeSystem === sys && styles.segBtnTextActive]}>
+                {sys === 'hueco' ? 'Hueco (V)' : 'Font'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutText}>Log Out</Text>
       </TouchableOpacity>
@@ -372,6 +389,30 @@ const styles = StyleSheet.create({
   },
   myListsText: { color: '#42A5F5', fontSize: 15, fontWeight: '600' },
   myListsChevron: { color: '#555', fontSize: 22, fontWeight: '300' },
+
+  prefSection: {
+    marginHorizontal: 16,
+    marginTop: 24,
+  },
+  prefTitle: { color: '#fff', fontSize: 15, fontWeight: '700', marginBottom: 10 },
+  segmented: {
+    flexDirection: 'row',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    overflow: 'hidden',
+  },
+  segBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  segBtnActive: {
+    backgroundColor: '#42A5F5',
+  },
+  segBtnText: { color: '#aaa', fontSize: 14, fontWeight: '600' },
+  segBtnTextActive: { color: '#fff' },
 
   logoutButton: {
     marginHorizontal: 16,

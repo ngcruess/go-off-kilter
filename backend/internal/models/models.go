@@ -202,9 +202,9 @@ type ClimbCreateRequest struct {
 
 // ClimbPublishRequest is the payload for publishing a draft climb.
 type ClimbPublishRequest struct {
-	Name  string `json:"name"`
-	Grade int    `json:"grade"`
-	Angle int    `json:"angle"`
+	Name       string  `json:"name"`
+	Difficulty float64 `json:"difficulty"`
+	Angle      int     `json:"angle"`
 }
 
 type List struct {

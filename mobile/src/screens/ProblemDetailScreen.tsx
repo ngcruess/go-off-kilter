@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   View,
   Text,
@@ -27,13 +28,14 @@ import {
 } from '../api/client';
 import { BoardView } from '../components/BoardView/BoardView';
 import { useUser } from '../context/UserContext';
-import { DifficultyGrade, ANGLES } from '../types';
+import { DifficultyGrade, ANGLES, extractGrade } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProblemDetail'>;
 
 export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { uuid } = route.params;
-  const { user, angle, setAngle } = useUser();
+  const { user, angle, setAngle, gradeSystem, boardConnected } = useUser();
+  const autoSentRef = useRef(false);
   const queryClient = useQueryClient();
   const [showAnglePicker, setShowAnglePicker] = useState(false);
   const [showListPicker, setShowListPicker] = useState(false);
@@ -93,22 +95,42 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     },
   });
 
+  useEffect(() => {
+    if (boardConnected && climbQuery.data && !autoSentRef.current) {
+      autoSentRef.current = true;
+      sendToBoard(uuid).catch(() => {});
+    }
+  }, [boardConnected, climbQuery.data, uuid]);
+
   React.useLayoutEffect(() => {
     navigation.setOptions({
       title: climbQuery.data?.name || 'Problem',
       headerRight: () => (
-        <TouchableOpacity
-          onPress={() => setShowAnglePicker(true)}
-          style={{
-            backgroundColor: '#2a2a2a', borderRadius: 14,
-            paddingHorizontal: 10, paddingVertical: 4,
-          }}
-        >
-          <Text style={{ color: '#42A5F5', fontSize: 14, fontWeight: '700' }}>{angle}{'\u00B0'}</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          {boardConnected && (
+            <TouchableOpacity
+              onPress={handleSendToBoard}
+              style={{
+                backgroundColor: '#2a2a2a', borderRadius: 14,
+                paddingHorizontal: 10, paddingVertical: 4,
+              }}
+            >
+              <MaterialCommunityIcons name="bluetooth" size={18} color="#00E5FF" />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            onPress={() => setShowAnglePicker(true)}
+            style={{
+              backgroundColor: '#2a2a2a', borderRadius: 14,
+              paddingHorizontal: 10, paddingVertical: 4,
+            }}
+          >
+            <Text style={{ color: '#00E5FF', fontSize: 14, fontWeight: '700' }}>{angle}{'\u00B0'}</Text>
+          </TouchableOpacity>
+        </View>
       ),
     });
-  }, [climbQuery.data?.name, navigation, angle]);
+  }, [climbQuery.data?.name, navigation, angle, boardConnected]);
 
   const handleSendToBoard = async () => {
     try {
@@ -183,7 +205,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   if (climbQuery.isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#42A5F5" />
+        <ActivityIndicator size="large" color="#00E5FF" />
       </View>
     );
   }
@@ -198,9 +220,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const climb = climbQuery.data;
   const grade = climb.stats ? (climb.stats.grade || '??') : '??';
-  const stars = climb.stats?.quality_average
-    ? '\u2605'.repeat(Math.round(climb.stats.quality_average))
-    : '';
+  const qualityAvg = climb.stats?.quality_average;
   const summary = summaryQuery.data;
 
   return (
@@ -215,7 +235,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
       {layoutQuery.isLoading && (
         <View style={styles.boardPlaceholder}>
-          <ActivityIndicator size="large" color="#42A5F5" />
+          <ActivityIndicator size="large" color="#00E5FF" />
         </View>
       )}
 
@@ -237,7 +257,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           {climb.stats?.ascensionist_count ? (
             <StatBadge label="Sends" value={String(climb.stats.ascensionist_count)} />
           ) : null}
-          {stars ? <StatBadge label="Quality" value={stars} /> : null}
+          {qualityAvg ? <StatBadge label="Quality" value={`\u2605 ${Math.round(qualityAvg)}`} /> : null}
           {climb.is_no_match ? (
             <View style={styles.noMatchBadge}>
               <Text style={styles.noMatchText}>No Match</Text>
@@ -258,35 +278,30 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         {climb.description ? (
           <Text style={styles.description}>{climb.description}</Text>
         ) : null}
-      </View>
+        <View style={styles.logRow}>
+          <TouchableOpacity
+            style={[styles.logButton, styles.logAttemptButton]}
+            onPress={handleLogAttempt}
+            disabled={logging}
+          >
+            <Text style={styles.logAttemptText}>Log Attempt</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.logButton, styles.logSendButton]}
+            onPress={openSendModal}
+            disabled={logging}
+          >
+            <Text style={styles.logSendText}>Log Send</Text>
+          </TouchableOpacity>
+        </View>
 
-      <TouchableOpacity style={styles.sendButton} onPress={handleSendToBoard}>
-        <Text style={styles.sendButtonText}>Send to Board</Text>
-      </TouchableOpacity>
-
-      <View style={styles.logRow}>
         <TouchableOpacity
-          style={[styles.logButton, styles.logAttemptButton]}
-          onPress={handleLogAttempt}
-          disabled={logging}
+          style={styles.listButton}
+          onPress={() => setShowListPicker(true)}
         >
-          <Text style={styles.logButtonText}>Log Attempt</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.logButton, styles.logSendButton]}
-          onPress={openSendModal}
-          disabled={logging}
-        >
-          <Text style={styles.logButtonText}>Log Send</Text>
+          <Text style={styles.listButtonText}>Add to List</Text>
         </TouchableOpacity>
       </View>
-
-      <TouchableOpacity
-        style={styles.listButton}
-        onPress={() => setShowListPicker(true)}
-      >
-        <Text style={styles.listButtonText}>Add to List</Text>
-      </TouchableOpacity>
 
       {/* Log Send Modal */}
       <Modal
@@ -308,7 +323,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   onPress={() => setSelectedGrade(g.difficulty)}
                 >
                   <Text style={[styles.gradeChipText, selectedGrade === g.difficulty && styles.gradeChipTextActive]}>
-                    {g.boulder_name}
+                    {extractGrade(g.boulder_name, gradeSystem)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -395,7 +410,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <Text style={styles.modalTitle}>Add to List</Text>
 
           {listsQuery.isLoading ? (
-            <ActivityIndicator color="#42A5F5" style={{ marginVertical: 20 }} />
+            <ActivityIndicator color="#00E5FF" style={{ marginVertical: 20 }} />
           ) : (listsQuery.data ?? []).length === 0 ? (
             <Text style={styles.listEmptyText}>No lists yet. Create one below.</Text>
           ) : (
@@ -452,46 +467,42 @@ const StatBadge: React.FC<{ label: string; value: string }> = ({ label, value })
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
-  content: { paddingBottom: 40 },
+  content: { paddingBottom: 32 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' },
   errorText: { color: '#ff6b6b', fontSize: 16 },
   boardPlaceholder: { height: 300, justifyContent: 'center', alignItems: 'center', backgroundColor: '#111' },
-  info: { padding: 16 },
-  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  name: { color: '#ffffff', fontSize: 22, fontWeight: '700', flex: 1, marginRight: 12 },
-  grade: { color: '#42A5F5', fontSize: 22, fontWeight: '800' },
-  setter: { color: '#888', fontSize: 14, marginBottom: 12 },
-  statsRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  info: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12 },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  name: { color: '#ffffff', fontSize: 24, fontWeight: '700', flex: 1, marginRight: 12 },
+  grade: { color: '#00E5FF', fontSize: 24, fontWeight: '800', fontStyle: 'italic' },
+  setter: { color: '#888', fontSize: 14, marginBottom: 10 },
+  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   statBadge: {
-    backgroundColor: '#1e1e1e', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8,
-    borderWidth: 1, borderColor: '#2a2a2a',
+    backgroundColor: '#111', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6,
+    borderWidth: 0.5, borderColor: '#333',
   },
-  statLabel: { color: '#888', fontSize: 11, textTransform: 'uppercase', marginBottom: 2 },
+  statLabel: { color: '#888', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
   statValue: { color: '#fff', fontSize: 15, fontWeight: '600' },
   noMatchBadge: {
-    backgroundColor: '#2a1a1a', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8,
-    borderWidth: 1, borderColor: '#3a2a2a',
+    backgroundColor: '#2a1a1a', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6,
+    borderWidth: 1, borderColor: '#3a2a2a', justifyContent: 'center',
   },
-  noMatchText: { color: '#e57373', fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  noMatchText: { color: '#e57373', fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
   yourStatsRow: {
-    flexDirection: 'row', alignItems: 'center', marginBottom: 12,
-    backgroundColor: '#1a2a1a', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#2a3a2a',
+    flexDirection: 'row', alignItems: 'center', marginBottom: 8,
+    backgroundColor: '#163028', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14,
+    borderWidth: 0.5, borderColor: '#4dba8a',
   },
-  yourStatsLabel: { color: '#6a6', fontSize: 13, marginRight: 8 },
-  yourStatsValue: { color: '#8c8', fontSize: 14, fontWeight: '600' },
-  description: { color: '#aaa', fontSize: 14, lineHeight: 20 },
-  sendButton: {
-    marginHorizontal: 16, marginTop: 8, backgroundColor: '#42A5F5',
-    borderRadius: 12, paddingVertical: 14, alignItems: 'center',
-  },
-  sendButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  logRow: { flexDirection: 'row', gap: 10, marginHorizontal: 16, marginTop: 10 },
-  logButton: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  logAttemptButton: { backgroundColor: '#333' },
-  logSendButton: { backgroundColor: '#2e7d32' },
-  logButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  yourStatsLabel: { color: '#4dba8a', fontSize: 13, marginRight: 6 },
+  yourStatsValue: { color: '#4dba8a', fontSize: 14, fontWeight: '600' },
+  description: { color: '#aaa', fontSize: 14, lineHeight: 20, marginBottom: 4 },
+  logRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  logButton: { flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center', borderWidth: 0.5 },
+  logAttemptButton: { backgroundColor: '#111', borderColor: '#333' },
+  logSendButton: { backgroundColor: '#163028', borderColor: '#4dba8a' },
+  logAttemptText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  logSendText: { color: '#4dba8a', fontSize: 15, fontWeight: '700' },
 
-  // Modal styles
   modalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end',
   },
@@ -506,15 +517,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a2a2a', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6,
     marginRight: 6, borderWidth: 1, borderColor: '#444',
   },
-  gradeChipActive: { backgroundColor: '#42A5F5', borderColor: '#42A5F5' },
+  gradeChipActive: { backgroundColor: '#00E5FF', borderColor: '#00E5FF' },
   gradeChipText: { color: '#aaa', fontSize: 13 },
-  gradeChipTextActive: { color: '#fff' },
+  gradeChipTextActive: { color: '#000' },
   qualityRow: { flexDirection: 'row', gap: 10 },
   qualityButton: {
     backgroundColor: '#2a2a2a', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8,
     borderWidth: 1, borderColor: '#444',
   },
-  qualityButtonActive: { backgroundColor: '#42A5F5', borderColor: '#42A5F5' },
+  qualityButtonActive: { backgroundColor: '#00E5FF', borderColor: '#00E5FF' },
   qualityText: { color: '#FFD700', fontSize: 16 },
   commentInput: {
     backgroundColor: '#2a2a2a', borderRadius: 10, padding: 12, color: '#fff',
@@ -528,9 +539,9 @@ const styles = StyleSheet.create({
   modalCancelText: { color: '#aaa', fontSize: 15, fontWeight: '600' },
   modalSubmit: {
     flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center',
-    backgroundColor: '#2e7d32',
+    backgroundColor: '#1a3a2a',
   },
-  modalSubmitText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  modalSubmitText: { color: '#00E5FF', fontSize: 15, fontWeight: '700' },
   angleModalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center',
   },
@@ -541,15 +552,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a2a2a', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10,
     borderWidth: 1, borderColor: '#444', minWidth: 56, alignItems: 'center',
   },
-  angleOptionActive: { backgroundColor: '#42A5F5', borderColor: '#42A5F5' },
+  angleOptionActive: { backgroundColor: '#00E5FF', borderColor: '#00E5FF' },
   angleOptionText: { color: '#aaa', fontSize: 15, fontWeight: '600' },
-  angleOptionTextActive: { color: '#fff' },
+  angleOptionTextActive: { color: '#000' },
   listButton: {
-    marginHorizontal: 16, marginTop: 10, backgroundColor: '#1e1e1e',
-    borderRadius: 12, paddingVertical: 14, alignItems: 'center',
-    borderWidth: 1, borderColor: '#333',
+    marginTop: 8, backgroundColor: '#111',
+    borderRadius: 12, paddingVertical: 12, alignItems: 'center',
+    borderWidth: 0.5, borderColor: '#333',
   },
-  listButtonText: { color: '#42A5F5', fontSize: 15, fontWeight: '700' },
+  listButtonText: { color: '#00E5FF', fontSize: 15, fontWeight: '700' },
   listModalContent: {
     backgroundColor: '#1a1a1a', borderTopLeftRadius: 20, borderTopRightRadius: 20,
     padding: 20, paddingBottom: 40, maxHeight: '70%',
@@ -564,8 +575,8 @@ const styles = StyleSheet.create({
     width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: '#555',
     marginRight: 12, justifyContent: 'center', alignItems: 'center',
   },
-  listCheckboxActive: { backgroundColor: '#42A5F5', borderColor: '#42A5F5' },
-  listCheckmark: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  listCheckboxActive: { backgroundColor: '#00E5FF', borderColor: '#00E5FF' },
+  listCheckmark: { color: '#000', fontSize: 14, fontWeight: '700' },
   listRowText: { color: '#fff', fontSize: 15 },
   newListRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   newListInput: {
@@ -573,8 +584,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8, color: '#fff', fontSize: 14, borderWidth: 1, borderColor: '#444',
   },
   newListButton: {
-    backgroundColor: '#42A5F5', borderRadius: 10, paddingHorizontal: 16,
+    backgroundColor: '#00E5FF', borderRadius: 10, paddingHorizontal: 16,
     justifyContent: 'center',
   },
-  newListButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  newListButtonText: { color: '#000', fontSize: 14, fontWeight: '700' },
 });

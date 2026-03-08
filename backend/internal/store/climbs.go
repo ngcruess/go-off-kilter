@@ -381,23 +381,11 @@ func (s *ClimbStore) Publish(uuid string, req models.ClimbPublishRequest) error 
 		return fmt.Errorf("climb %s not found", uuid)
 	}
 
-	// Resolve the V-grade index to a display_difficulty value from the grades table.
-	// The frontend sends a grade label like "V3"; we find the matching difficulty value.
-	gradeName := fmt.Sprintf("V%d", req.Grade)
-	var displayDifficulty float64
-	err = s.db.QueryRow(
-		`SELECT difficulty FROM difficulty_grades
-		 WHERE boulder_name LIKE ? ORDER BY difficulty ASC LIMIT 1`,
-		"%"+gradeName).Scan(&displayDifficulty)
-	if err != nil {
-		displayDifficulty = float64(req.Grade)
-	}
-
 	_, err = s.db.Exec(`
 		INSERT INTO climb_stats (climb_uuid, angle, display_difficulty)
 		VALUES (?, ?, ?)
 		ON CONFLICT(climb_uuid, angle) DO UPDATE SET
 			display_difficulty = excluded.display_difficulty`,
-		uuid, req.Angle, displayDifficulty)
+		uuid, req.Angle, req.Difficulty)
 	return err
 }
