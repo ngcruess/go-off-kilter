@@ -542,9 +542,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3, shadowRadius: 3, elevation: 4,
   },
   logAttemptButton: { backgroundColor: colors.chip },
-  logSendButton: { backgroundColor: colors.accentGreenBg },
+  logSendButton: {
+    backgroundColor: colors.accentGreenBg,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#5a9474',
+  },
   logAttemptText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
-  logSendText: { color: colors.accentGreen, fontSize: 15, fontWeight: '700' },
+  logSendText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
 
   modalOverlay: {
     flex: 1, backgroundColor: colors.overlayDark, justifyContent: 'flex-end',
