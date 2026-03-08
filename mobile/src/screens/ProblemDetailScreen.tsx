@@ -105,33 +105,63 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
-      title: climbQuery.data?.name || 'Problem',
-      headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          {boardConnected && (
-            <TouchableOpacity
-              onPress={handleSendToBoard}
-              style={{
-                backgroundColor: colors.chip, borderRadius: 14,
-                paddingHorizontal: 10, paddingVertical: 4,
-              }}
-            >
-              <MaterialCommunityIcons name="bluetooth" size={18} color={colors.accent} />
-            </TouchableOpacity>
-          )}
+      title: '',
+      headerTitle: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <TouchableOpacity
+            onPress={boardConnected ? handleSendToBoard : undefined}
+            style={{
+              backgroundColor: colors.chip, borderRadius: 16,
+              paddingHorizontal: 12, paddingVertical: 6,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="bluetooth"
+              size={20}
+              color={boardConnected ? colors.accent : colors.textMuted}
+            />
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setShowAnglePicker(true)}
             style={{
-              backgroundColor: colors.chip, borderRadius: 14,
-              paddingHorizontal: 10, paddingVertical: 4,
+              backgroundColor: colors.chip, borderRadius: 16,
+              paddingHorizontal: 14, paddingVertical: 6,
             }}
           >
-            <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '700' }}>{angle}{'\u00B0'}</Text>
+            <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '700' }}>{angle}{'\u00B0'}</Text>
+          </TouchableOpacity>
+        </View>
+      ),
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Profile')}
+            style={{
+              backgroundColor: colors.chip, borderRadius: 14,
+              padding: 4,
+            }}
+          >
+            <View style={{
+              width: 22, height: 22, borderRadius: 11,
+              backgroundColor: colors.borderMedium, justifyContent: 'center', alignItems: 'center',
+            }}>
+              <Text style={{ color: colors.textTertiary, fontSize: 10, fontWeight: '700' }}>
+                {user?.username?.charAt(0).toUpperCase() || '?'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.chip, borderRadius: 14,
+              paddingHorizontal: 8, paddingVertical: 4,
+            }}
+          >
+            <MaterialCommunityIcons name="dots-horizontal" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       ),
     });
-  }, [climbQuery.data?.name, navigation, angle, boardConnected]);
+  }, [navigation, angle, boardConnected, user?.username]);
 
   const handleSendToBoard = async () => {
     try {
@@ -486,8 +516,10 @@ const styles = StyleSheet.create({
   setter: { color: colors.textSecondary, fontSize: 14, marginBottom: 10 },
   statsContainer: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.surfaceRaised, borderRadius: 10,
+    backgroundColor: colors.surface, borderRadius: 10,
     paddingVertical: 10, paddingHorizontal: 14, marginBottom: 8,
+    borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.25)',
+    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)',
   },
   statsLeft: { flex: 1, flexDirection: 'row', gap: 16, justifyContent: 'flex-end', paddingRight: 16 },
   statsDivider: { width: 1, height: 28, backgroundColor: colors.textDisabled },
@@ -504,8 +536,12 @@ const styles = StyleSheet.create({
   noMatchText: { color: colors.errorMuted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
   description: { color: colors.textTertiary, fontSize: 14, lineHeight: 20, marginBottom: 4 },
   logRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  logButton: { flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
-  logAttemptButton: { backgroundColor: colors.surfaceRaised },
+  logButton: {
+    flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3, shadowRadius: 3, elevation: 4,
+  },
+  logAttemptButton: { backgroundColor: colors.chip },
   logSendButton: { backgroundColor: colors.accentGreenBg },
   logAttemptText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   logSendText: { color: colors.accentGreen, fontSize: 15, fontWeight: '700' },
@@ -563,8 +599,10 @@ const styles = StyleSheet.create({
   angleOptionText: { color: colors.textTertiary, fontSize: 15, fontWeight: '600' },
   angleOptionTextActive: { color: colors.textOnAccent },
   listButton: {
-    marginTop: 8, backgroundColor: colors.surfaceRaised,
+    marginTop: 8, backgroundColor: colors.chip,
     borderRadius: 12, paddingVertical: 12, alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3, shadowRadius: 3, elevation: 4,
   },
   listButtonText: { color: colors.accent, fontSize: 15, fontWeight: '700' },
   listModalContent: {
