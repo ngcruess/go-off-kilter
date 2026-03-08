@@ -253,28 +253,42 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           </Text>
         ) : null}
 
-        <View style={styles.statsRow}>
-          <StatBadge label="Angle" value={`${angle}\u00B0`} />
-          {climb.stats?.ascensionist_count ? (
-            <StatBadge label="Sends" value={String(climb.stats.ascensionist_count)} />
-          ) : null}
-          {qualityAvg ? <StatBadge label="Quality" value={`\u2605 ${Math.round(qualityAvg)}`} /> : null}
-          {climb.is_no_match ? (
-            <View style={styles.noMatchBadge}>
-              <Text style={styles.noMatchText}>No Match</Text>
+        <View style={styles.statsContainer}>
+          <View style={styles.statsLeft}>
+            {climb.stats?.ascensionist_count ? (
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>Sends</Text>
+                <Text style={styles.statValue}>{climb.stats.ascensionist_count}</Text>
+              </View>
+            ) : null}
+            {qualityAvg ? (
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>Quality</Text>
+                <Text style={styles.statValue}>{'\u2605'} {Math.round(qualityAvg)}</Text>
+              </View>
+            ) : null}
+            {climb.is_no_match ? (
+              <View style={styles.noMatchBadge}>
+                <Text style={styles.noMatchText}>No Match</Text>
+              </View>
+            ) : null}
+          </View>
+          {summary && (summary.attempts > 0 || summary.sends > 0) ? (
+            <>
+            <View style={styles.statsDivider} />
+            <View style={styles.statsRight}>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabelGreen}>Your Sends</Text>
+                <Text style={styles.statValueGreen}>{summary.sends}</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabelGreen}>Attempts</Text>
+                <Text style={styles.statValueGreen}>{summary.attempts}</Text>
+              </View>
             </View>
+            </>
           ) : null}
         </View>
-
-        {summary && (summary.attempts > 0 || summary.sends > 0) ? (
-          <View style={styles.yourStatsRow}>
-            <Text style={styles.yourStatsLabel}>Your progress:</Text>
-            <Text style={styles.yourStatsValue}>
-              {summary.sends} send{summary.sends !== 1 ? 's' : ''},{' '}
-              {summary.attempts} attempt{summary.attempts !== 1 ? 's' : ''}
-            </Text>
-          </View>
-        ) : null}
 
         {climb.description ? (
           <Text style={styles.description}>{climb.description}</Text>
@@ -459,13 +473,6 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 };
 
-const StatBadge: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <View style={styles.statBadge}>
-    <Text style={styles.statLabel}>{label}</Text>
-    <Text style={styles.statValue}>{value}</Text>
-  </View>
-);
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.pageBg },
   content: { paddingBottom: 32 },
@@ -477,30 +484,29 @@ const styles = StyleSheet.create({
   name: { color: colors.textPrimary, fontSize: 24, fontWeight: '700', flex: 1, marginRight: 12 },
   grade: { color: colors.accent, fontSize: 24, fontWeight: '800', fontStyle: 'italic' },
   setter: { color: colors.textSecondary, fontSize: 14, marginBottom: 10 },
-  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  statBadge: {
-    backgroundColor: colors.surface, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6,
-    borderWidth: 0.5, borderColor: colors.border,
+  statsContainer: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: colors.surfaceRaised, borderRadius: 10,
+    paddingVertical: 10, paddingHorizontal: 14, marginBottom: 8,
   },
+  statsLeft: { flex: 1, flexDirection: 'row', gap: 16, justifyContent: 'flex-end', paddingRight: 16 },
+  statsDivider: { width: 1, height: 28, backgroundColor: colors.textDisabled },
+  statsRight: { flex: 1, flexDirection: 'row', gap: 16, justifyContent: 'flex-start', paddingLeft: 16 },
+  statItem: { alignItems: 'center' },
   statLabel: { color: colors.textSecondary, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
   statValue: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
+  statLabelGreen: { color: colors.accentGreen, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  statValueGreen: { color: colors.accentGreen, fontSize: 15, fontWeight: '600' },
   noMatchBadge: {
     backgroundColor: colors.errorBg, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6,
     borderWidth: 1, borderColor: colors.errorBorder, justifyContent: 'center',
   },
   noMatchText: { color: colors.errorMuted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
-  yourStatsRow: {
-    flexDirection: 'row', alignItems: 'center', marginBottom: 8,
-    backgroundColor: colors.accentGreenBg, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14,
-    borderWidth: 0.5, borderColor: colors.accentGreen,
-  },
-  yourStatsLabel: { color: colors.accentGreen, fontSize: 13, marginRight: 6 },
-  yourStatsValue: { color: colors.accentGreen, fontSize: 14, fontWeight: '600' },
   description: { color: colors.textTertiary, fontSize: 14, lineHeight: 20, marginBottom: 4 },
   logRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  logButton: { flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center', borderWidth: 0.5 },
-  logAttemptButton: { backgroundColor: colors.surface, borderColor: colors.border },
-  logSendButton: { backgroundColor: colors.accentGreenBg, borderColor: colors.accentGreen },
+  logButton: { flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  logAttemptButton: { backgroundColor: colors.surfaceRaised },
+  logSendButton: { backgroundColor: colors.accentGreenBg },
   logAttemptText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   logSendText: { color: colors.accentGreen, fontSize: 15, fontWeight: '700' },
 
@@ -557,9 +563,8 @@ const styles = StyleSheet.create({
   angleOptionText: { color: colors.textTertiary, fontSize: 15, fontWeight: '600' },
   angleOptionTextActive: { color: colors.textOnAccent },
   listButton: {
-    marginTop: 8, backgroundColor: colors.surface,
+    marginTop: 8, backgroundColor: colors.surfaceRaised,
     borderRadius: 12, paddingVertical: 12, alignItems: 'center',
-    borderWidth: 0.5, borderColor: colors.border,
   },
   listButtonText: { color: colors.accent, fontSize: 15, fontWeight: '700' },
   listModalContent: {
