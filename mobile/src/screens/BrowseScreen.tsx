@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { colors } from '../theme';
 import {
   View,
   FlatList,
@@ -95,38 +96,38 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity
             onPress={() => setBoardConnected(!boardConnected)}
             style={{
-              backgroundColor: '#2a2a2a', borderRadius: 14,
+              backgroundColor: colors.chip, borderRadius: 14,
               paddingHorizontal: 10, paddingVertical: 4,
             }}
           >
-            <MaterialCommunityIcons name="bluetooth" size={18} color={boardConnected ? '#00E5FF' : '#666'} />
+            <MaterialCommunityIcons name="bluetooth" size={18} color={boardConnected ? colors.accent : colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setShowAnglePicker(true)}
             style={{
-              backgroundColor: '#2a2a2a', borderRadius: 14,
+              backgroundColor: colors.chip, borderRadius: 14,
               paddingHorizontal: 10, paddingVertical: 4,
             }}
           >
-            <Text style={{ color: '#00E5FF', fontSize: 14, fontWeight: '700' }}>{angle}{'\u00B0'}</Text>
+            <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '700' }}>{angle}{'\u00B0'}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('Profile')}
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 6,
-              backgroundColor: '#2a2a2a', borderRadius: 14,
+              backgroundColor: colors.chip, borderRadius: 14,
               paddingHorizontal: 10, paddingVertical: 4,
             }}
           >
             <View style={{
               width: 22, height: 22, borderRadius: 11,
-              backgroundColor: '#444', justifyContent: 'center', alignItems: 'center',
+              backgroundColor: colors.borderMedium, justifyContent: 'center', alignItems: 'center',
             }}>
-              <Text style={{ color: '#aaa', fontSize: 10, fontWeight: '700' }}>
+              <Text style={{ color: colors.textTertiary, fontSize: 10, fontWeight: '700' }}>
                 {user?.username?.charAt(0).toUpperCase() || '?'}
               </Text>
             </View>
-            <Text style={{ color: '#42A5F5', fontSize: 13, fontWeight: '600' }}>
+            <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>
               {user?.username || 'Profile'}
             </Text>
           </TouchableOpacity>
@@ -182,7 +183,7 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
         <TextInput
           style={styles.searchInput}
           placeholder="Search problems..."
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.textMuted}
           value={search}
           onChangeText={handleSearch}
           autoCapitalize="none"
@@ -226,7 +227,7 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
           <TextInput
             style={styles.setterInput}
             placeholder="Setter name..."
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.textMuted}
             value={setter}
             onChangeText={setSetter}
             autoCapitalize="none"
@@ -320,7 +321,7 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.listContainer}>
         {isLoading && !isFetchingNextPage && (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color="#42A5F5" />
+            <ActivityIndicator size="large" color={colors.accent} />
           </View>
         )}
 
@@ -351,7 +352,7 @@ export const BrowseScreen: React.FC<Props> = ({ navigation }) => {
             }
             ListFooterComponent={
               isFetchingNextPage ? (
-                <ActivityIndicator style={{ paddingVertical: 16 }} color="#42A5F5" />
+                <ActivityIndicator style={{ paddingVertical: 16 }} color={colors.accent} />
               ) : null
             }
           />
@@ -435,88 +436,88 @@ const FilterPicker: React.FC<FilterPickerProps> = ({ label, options, value, onSe
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: colors.pageBg },
   searchRow: { flexDirection: 'row', padding: 12, gap: 8 },
   searchInput: {
-    flex: 1, backgroundColor: '#1e1e1e', borderRadius: 10,
-    paddingHorizontal: 14, paddingVertical: 10, color: '#ffffff',
-    fontSize: 15, borderWidth: 1, borderColor: '#333',
+    flex: 1, backgroundColor: colors.surfaceInput, borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 10, color: colors.textPrimary,
+    fontSize: 15, borderWidth: 1, borderColor: colors.border,
   },
   filterButton: {
-    backgroundColor: '#1e1e1e', borderRadius: 10, paddingHorizontal: 14,
-    justifyContent: 'center', borderWidth: 1, borderColor: '#333',
+    backgroundColor: colors.surfaceInput, borderRadius: 10, paddingHorizontal: 14,
+    justifyContent: 'center', borderWidth: 1, borderColor: colors.border,
   },
-  filterButtonText: { color: '#42A5F5', fontSize: 14, fontWeight: '600' },
+  filterButtonText: { color: colors.accent, fontSize: 14, fontWeight: '600' },
   sortRow: {
     flexDirection: 'row', paddingHorizontal: 12, paddingBottom: 8, gap: 6,
   },
   sortChip: {
-    backgroundColor: '#1e1e1e', borderRadius: 8,
+    backgroundColor: colors.surfaceInput, borderRadius: 8,
     paddingHorizontal: 12, paddingVertical: 6,
-    borderWidth: 1, borderColor: '#333',
+    borderWidth: 1, borderColor: colors.border,
   },
-  sortChipActive: { backgroundColor: '#2a2a2a', borderColor: '#42A5F5' },
-  sortChipText: { color: '#888', fontSize: 13 },
-  sortChipTextActive: { color: '#42A5F5', fontWeight: '600' },
+  sortChipActive: { backgroundColor: colors.chip, borderColor: colors.accent },
+  sortChipText: { color: colors.textSecondary, fontSize: 13 },
+  sortChipTextActive: { color: colors.accent, fontWeight: '600' },
   filterScroll: { maxHeight: 320 },
   filterSection: { paddingHorizontal: 12, paddingBottom: 12 },
   filterLabel: {
-    color: '#999', fontSize: 12, fontWeight: '600',
+    color: colors.textSecondary, fontSize: 12, fontWeight: '600',
     textTransform: 'uppercase', marginBottom: 6, marginTop: 12,
   },
   filterRow: { flexDirection: 'row', gap: 12 },
   setterInput: {
-    backgroundColor: '#1e1e1e', borderRadius: 10,
-    paddingHorizontal: 14, paddingVertical: 8, color: '#ffffff',
-    fontSize: 14, borderWidth: 1, borderColor: '#333', marginTop: 4,
+    backgroundColor: colors.surfaceInput, borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 8, color: colors.textPrimary,
+    fontSize: 14, borderWidth: 1, borderColor: colors.border, marginTop: 4,
   },
   clearButton: {
     alignSelf: 'center', marginTop: 14,
     paddingHorizontal: 20, paddingVertical: 8,
-    borderRadius: 8, borderWidth: 1, borderColor: '#ff6b6b',
+    borderRadius: 8, borderWidth: 1, borderColor: colors.error,
   },
-  clearButtonText: { color: '#ff6b6b', fontSize: 13, fontWeight: '600' },
+  clearButtonText: { color: colors.error, fontSize: 13, fontWeight: '600' },
   listContainer: { flex: 1 },
   angleModalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center',
+    flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center',
   },
-  angleModalContent: { backgroundColor: '#1a1a1a', borderRadius: 16, padding: 20, width: 300 },
-  angleModalTitle: { color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
+  angleModalContent: { backgroundColor: colors.surfaceRaised, borderRadius: 16, padding: 20, width: 300 },
+  angleModalTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
   angleGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   angleOption: {
-    backgroundColor: '#2a2a2a', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10,
-    borderWidth: 1, borderColor: '#444', minWidth: 56, alignItems: 'center',
+    backgroundColor: colors.chip, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10,
+    borderWidth: 1, borderColor: colors.borderMedium, minWidth: 56, alignItems: 'center',
   },
-  angleOptionActive: { backgroundColor: '#42A5F5', borderColor: '#42A5F5' },
-  angleOptionText: { color: '#aaa', fontSize: 15, fontWeight: '600' },
-  angleOptionTextActive: { color: '#fff' },
+  angleOptionActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  angleOptionText: { color: colors.textTertiary, fontSize: 15, fontWeight: '600' },
+  angleOptionTextActive: { color: colors.textPrimary },
   pickerContainer: { flex: 1 },
-  pickerLabel: { color: '#888', fontSize: 12, marginBottom: 4 },
+  pickerLabel: { color: colors.textSecondary, fontSize: 12, marginBottom: 4 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   chip: {
-    backgroundColor: '#1e1e1e', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4,
-    borderWidth: 1, borderColor: '#333',
+    backgroundColor: colors.surfaceInput, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4,
+    borderWidth: 1, borderColor: colors.border,
   },
-  chipActive: { backgroundColor: '#42A5F5', borderColor: '#42A5F5' },
-  chipText: { color: '#888', fontSize: 12 },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
+  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipText: { color: colors.textSecondary, fontSize: 12 },
+  chipTextActive: { color: colors.textPrimary, fontWeight: '600' },
   matchChip: {
-    backgroundColor: '#1e1e1e', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6,
-    borderWidth: 1, borderColor: '#333',
+    backgroundColor: colors.surfaceInput, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6,
+    borderWidth: 1, borderColor: colors.border,
   },
-  matchChipActive: { backgroundColor: '#42A5F5', borderColor: '#42A5F5' },
-  matchChipText: { color: '#888', fontSize: 13 },
-  matchChipTextActive: { color: '#fff', fontWeight: '600' },
+  matchChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  matchChipText: { color: colors.textSecondary, fontSize: 13 },
+  matchChipTextActive: { color: colors.textPrimary, fontWeight: '600' },
   list: { paddingVertical: 8 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  errorText: { color: '#ff6b6b', fontSize: 16, fontWeight: '600' },
-  errorDetail: { color: '#888', fontSize: 13, marginTop: 4 },
-  emptyText: { color: '#666', fontSize: 15 },
+  errorText: { color: colors.error, fontSize: 16, fontWeight: '600' },
+  errorDetail: { color: colors.textSecondary, fontSize: 13, marginTop: 4 },
+  emptyText: { color: colors.textMuted, fontSize: 15 },
   fab: {
     position: 'absolute', bottom: 24, right: 24, width: 56, height: 56,
-    borderRadius: 28, backgroundColor: '#42A5F5', justifyContent: 'center',
-    alignItems: 'center', elevation: 4, shadowColor: '#42A5F5',
+    borderRadius: 28, backgroundColor: colors.accent, justifyContent: 'center',
+    alignItems: 'center', elevation: 4, shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 8,
   },
-  fabText: { color: '#fff', fontSize: 28, fontWeight: '300', marginTop: -2 },
+  fabText: { color: colors.textPrimary, fontSize: 28, fontWeight: '300', marginTop: -2 },
 });

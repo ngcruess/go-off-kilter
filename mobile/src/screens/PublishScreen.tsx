@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { colors } from '../theme';
 import {
   View,
   Text,
@@ -68,7 +69,7 @@ export const PublishScreen: React.FC<Props> = ({ route, navigation }) => {
       <TextInput
         style={styles.nameInput}
         placeholder="Give it a name..."
-        placeholderTextColor="#555"
+        placeholderTextColor={colors.textDisabled}
         value={name}
         onChangeText={setName}
         autoFocus
@@ -119,7 +120,7 @@ export const PublishScreen: React.FC<Props> = ({ route, navigation }) => {
         disabled={publishing || selectedDifficulty === null}
       >
         {publishing ? (
-          <ActivityIndicator size="small" color="#fff" />
+          <ActivityIndicator size="small" color={colors.textPrimary} />
         ) : (
           <Text style={styles.publishButtonText}>Publish</Text>
         )}
@@ -131,14 +132,14 @@ export const PublishScreen: React.FC<Props> = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: colors.pageBg,
   },
   content: {
     padding: 16,
     paddingBottom: 40,
   },
   sectionTitle: {
-    color: '#999',
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -147,40 +148,40 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   nameInput: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: colors.surfaceInput,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: '#ffffff',
+    color: colors.textPrimary,
     fontSize: 17,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
   },
   gradeScroll: {
     marginBottom: 4,
   },
   gradeChip: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: colors.surfaceInput,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
     minWidth: 52,
     alignItems: 'center',
     marginRight: 8,
   },
   gradeChipActive: {
-    backgroundColor: '#42A5F5',
-    borderColor: '#42A5F5',
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   gradeChipText: {
-    color: '#888',
+    color: colors.textSecondary,
     fontSize: 15,
     fontWeight: '600',
   },
   gradeChipTextActive: {
-    color: '#fff',
+    color: colors.textPrimary,
   },
   angleGrid: {
     flexDirection: 'row',
@@ -188,44 +189,44 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   angleChip: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: colors.surfaceInput,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
     minWidth: 48,
     alignItems: 'center',
   },
   angleChipActive: {
-    backgroundColor: '#42A5F5',
-    borderColor: '#42A5F5',
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   angleChipText: {
-    color: '#888',
+    color: colors.textSecondary,
     fontSize: 15,
     fontWeight: '600',
   },
   angleChipTextActive: {
-    color: '#fff',
+    color: colors.textPrimary,
   },
   summary: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 10,
     padding: 14,
     marginTop: 24,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: colors.borderCard,
     alignItems: 'center',
   },
   summaryText: {
-    color: '#fff',
+    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: '600',
   },
   publishButton: {
     marginTop: 20,
-    backgroundColor: '#00E676',
+    backgroundColor: colors.success,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -234,7 +235,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   publishButtonText: {
-    color: '#000',
+    color: colors.textOnAccent,
     fontSize: 17,
     fontWeight: '800',
   },

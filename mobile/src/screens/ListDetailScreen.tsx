@@ -14,6 +14,7 @@ import { RootStackParamList } from '../../App';
 import { fetchList, removeFromList } from '../api/client';
 import { ProblemCard } from '../components/ProblemCard/ProblemCard';
 import { useUser } from '../context/UserContext';
+import { colors } from '../theme';
 import { ClimbSummary } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ListDetail'>;
@@ -58,7 +59,7 @@ export const ListDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   if (listQuery.isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#42A5F5" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -92,9 +93,9 @@ export const ListDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: colors.pageBg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: colors.pageBg },
   list: { paddingVertical: 8 },
-  emptyText: { color: '#666', fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  emptySubtext: { color: '#555', fontSize: 14 },
+  emptyText: { color: colors.textMuted, fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  emptySubtext: { color: colors.textDisabled, fontSize: 14 },
 });

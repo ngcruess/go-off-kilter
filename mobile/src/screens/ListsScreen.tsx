@@ -14,22 +14,17 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { fetchUserLists, createList } from '../api/client';
 import { useUser } from '../context/UserContext';
+import { colors } from '../theme';
 import { ClimbList } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Lists'>;
-
-const LIST_COLORS = [
-  '#42A5F5', '#66BB6A', '#FFA726', '#EF5350',
-  '#AB47BC', '#26C6DA', '#EC407A', '#8D6E63',
-  '#78909C', '#FFD54F',
-];
 
 export const ListsScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useUser();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newColor, setNewColor] = useState('#42A5F5');
+  const [newColor, setNewColor] = useState(colors.accent);
 
   const listsQuery = useQuery({
     queryKey: ['user-lists', user?.id],
@@ -44,7 +39,7 @@ export const ListsScreen: React.FC<Props> = ({ navigation }) => {
       queryClient.invalidateQueries({ queryKey: ['user-lists'] });
       setShowCreate(false);
       setNewName('');
-      setNewColor('#42A5F5');
+      setNewColor(colors.accent);
     },
   });
 
@@ -62,7 +57,7 @@ export const ListsScreen: React.FC<Props> = ({ navigation }) => {
       style={styles.card}
       onPress={() => navigation.navigate('ListDetail', { listId: item.id, listName: item.name })}
     >
-      <View style={[styles.colorDot, { backgroundColor: item.color || '#42A5F5' }]} />
+      <View style={[styles.colorDot, { backgroundColor: item.color || colors.accent }]} />
       <View style={styles.cardBody}>
         <Text style={styles.cardName}>{item.name}</Text>
         <Text style={styles.cardMeta}>
@@ -77,7 +72,7 @@ export const ListsScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       {listsQuery.isLoading && (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#42A5F5" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       )}
 
@@ -109,14 +104,14 @@ export const ListsScreen: React.FC<Props> = ({ navigation }) => {
             <TextInput
               style={styles.modalInput}
               placeholder="List name..."
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               value={newName}
               onChangeText={setNewName}
               autoCapitalize="none"
               autoFocus
             />
             <View style={styles.colorRow}>
-              {LIST_COLORS.map((c) => (
+              {colors.listPalette.map((c) => (
                 <TouchableOpacity
                   key={c}
                   style={[styles.colorSwatch, { backgroundColor: c }, newColor === c && styles.colorSwatchActive]}
@@ -126,7 +121,7 @@ export const ListsScreen: React.FC<Props> = ({ navigation }) => {
             </View>
 
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalCancel} onPress={() => { setShowCreate(false); setNewName(''); setNewColor('#42A5F5'); }}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => { setShowCreate(false); setNewName(''); setNewColor(colors.accent); }}>
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -145,49 +140,49 @@ export const ListsScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: colors.pageBg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   list: { paddingVertical: 8 },
   card: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#1a1a1a', marginHorizontal: 12, marginVertical: 4,
-    borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#2a2a2a',
+    backgroundColor: colors.surfaceRaised, marginHorizontal: 12, marginVertical: 4,
+    borderRadius: 12, padding: 16, borderWidth: 1, borderColor: colors.borderCard,
   },
   colorDot: { width: 12, height: 12, borderRadius: 6, marginRight: 12 },
   cardBody: { flex: 1 },
-  cardName: { color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  cardMeta: { color: '#888', fontSize: 13 },
-  chevron: { color: '#555', fontSize: 24, fontWeight: '300' },
-  emptyText: { color: '#666', fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  emptySubtext: { color: '#555', fontSize: 14 },
+  cardName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  cardMeta: { color: colors.textSecondary, fontSize: 13 },
+  chevron: { color: colors.textDisabled, fontSize: 24, fontWeight: '300' },
+  emptyText: { color: colors.textMuted, fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  emptySubtext: { color: colors.textDisabled, fontSize: 14 },
   fab: {
     position: 'absolute', bottom: 24, right: 24, width: 56, height: 56,
-    borderRadius: 28, backgroundColor: '#42A5F5', justifyContent: 'center',
-    alignItems: 'center', elevation: 4, shadowColor: '#42A5F5',
+    borderRadius: 28, backgroundColor: colors.accent, justifyContent: 'center',
+    alignItems: 'center', elevation: 4, shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 8,
   },
-  fabText: { color: '#fff', fontSize: 28, fontWeight: '300', marginTop: -2 },
+  fabText: { color: colors.textPrimary, fontSize: 28, fontWeight: '300', marginTop: -2 },
   modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center',
+    flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center',
   },
-  modalContent: { backgroundColor: '#1a1a1a', borderRadius: 16, padding: 20, width: 300 },
-  modalTitle: { color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
+  modalContent: { backgroundColor: colors.surfaceRaised, borderRadius: 16, padding: 20, width: 300 },
+  modalTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
   modalInput: {
-    backgroundColor: '#2a2a2a', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
-    color: '#fff', fontSize: 15, borderWidth: 1, borderColor: '#444', marginBottom: 16,
+    backgroundColor: colors.chip, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
+    color: colors.textPrimary, fontSize: 15, borderWidth: 1, borderColor: colors.borderMedium, marginBottom: 16,
   },
   colorRow: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center', marginBottom: 16,
   },
   colorSwatch: { width: 32, height: 32, borderRadius: 16 },
-  colorSwatchActive: { borderWidth: 3, borderColor: '#fff' },
+  colorSwatchActive: { borderWidth: 3, borderColor: colors.textPrimary },
   modalActions: { flexDirection: 'row', gap: 10 },
   modalCancel: {
-    flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center', backgroundColor: '#333',
+    flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center', backgroundColor: colors.border,
   },
-  modalCancelText: { color: '#aaa', fontSize: 15, fontWeight: '600' },
+  modalCancelText: { color: colors.textTertiary, fontSize: 15, fontWeight: '600' },
   modalSubmit: {
-    flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center', backgroundColor: '#42A5F5',
+    flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center', backgroundColor: colors.accent,
   },
-  modalSubmitText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  modalSubmitText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
 });

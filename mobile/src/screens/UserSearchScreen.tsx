@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { colors } from '../theme';
 import {
   View,
   Text,
@@ -93,7 +94,7 @@ export const UserSearchScreen: React.FC<Props> = ({ navigation }) => {
       <TextInput
         style={styles.searchInput}
         placeholder="Search by username..."
-        placeholderTextColor="#666"
+        placeholderTextColor={colors.textMuted}
         value={query}
         onChangeText={setQuery}
         autoCapitalize="none"
@@ -102,7 +103,7 @@ export const UserSearchScreen: React.FC<Props> = ({ navigation }) => {
       />
 
       {searchQuery.isLoading && query.length >= 2 && (
-        <ActivityIndicator size="small" color="#42A5F5" style={{ marginTop: 20 }} />
+        <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 20 }} />
       )}
 
       <FlatList
@@ -127,33 +128,33 @@ export const UserSearchScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: colors.pageBg },
   center: { paddingVertical: 40, alignItems: 'center' },
   list: { paddingVertical: 8 },
   searchInput: {
-    margin: 12, backgroundColor: '#1e1e1e', borderRadius: 10,
-    paddingHorizontal: 14, paddingVertical: 10, color: '#fff',
-    fontSize: 15, borderWidth: 1, borderColor: '#333',
+    margin: 12, backgroundColor: colors.surfaceInput, borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 10, color: colors.textPrimary,
+    fontSize: 15, borderWidth: 1, borderColor: colors.border,
   },
   card: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#1a1a1a', marginHorizontal: 12, marginVertical: 4,
-    borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#2a2a2a',
+    backgroundColor: colors.surfaceRaised, marginHorizontal: 12, marginVertical: 4,
+    borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.borderCard,
   },
   avatar: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#2a2a2a', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.chip, justifyContent: 'center', alignItems: 'center',
     marginRight: 12,
   },
-  avatarText: { color: '#888', fontSize: 14, fontWeight: '700' },
+  avatarText: { color: colors.textSecondary, fontSize: 14, fontWeight: '700' },
   cardBody: { flex: 1 },
-  cardName: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  cardName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
   actionBtn: {
-    backgroundColor: '#42A5F5', borderRadius: 8,
+    backgroundColor: colors.accent, borderRadius: 8,
     paddingHorizontal: 14, paddingVertical: 6,
   },
-  actionBtnActive: { backgroundColor: '#2a2a2a', borderWidth: 1, borderColor: '#444' },
-  actionText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  actionTextActive: { color: '#aaa', fontWeight: '600' },
-  emptyText: { color: '#666', fontSize: 15 },
+  actionBtnActive: { backgroundColor: colors.chip, borderWidth: 1, borderColor: colors.borderMedium },
+  actionText: { color: colors.textPrimary, fontSize: 13, fontWeight: '700' },
+  actionTextActive: { color: colors.textTertiary, fontWeight: '600' },
+  emptyText: { color: colors.textMuted, fontSize: 15 },
 });

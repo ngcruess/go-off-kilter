@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Svg, { Rect, Text as SvgText } from 'react-native-svg';
+import { colors } from '../../theme';
 
 export interface BarDatum {
   label: string;
@@ -19,7 +20,7 @@ const BAR_GAP = 4;
 
 export const BarChart: React.FC<BarChartProps> = ({
   data,
-  barColor = '#42A5F5',
+  barColor = colors.chartGrade,
   height = 160,
 }) => {
   if (data.length === 0) return null;
@@ -45,7 +46,7 @@ export const BarChart: React.FC<BarChartProps> = ({
               <SvgText
                 x={x + barWidth / 2}
                 y={VALUE_HEIGHT - 4}
-                fill="#aaa"
+                fill={colors.textTertiary}
                 fontSize={10}
                 fontWeight="600"
                 textAnchor="middle"
@@ -64,7 +65,7 @@ export const BarChart: React.FC<BarChartProps> = ({
               <SvgText
                 x={x + barWidth / 2}
                 y={height - 2}
-                fill="#888"
+                fill={colors.textSecondary}
                 fontSize={9}
                 textAnchor="middle"
               >

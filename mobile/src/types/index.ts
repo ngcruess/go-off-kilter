@@ -192,11 +192,13 @@ export const COLOR_TO_ROLE: Record<string, number> = {
   yellow: 15,
 };
 
+import { colors } from '../theme';
+
 export const COLOR_HEX: Record<string, string> = {
-  yellow: '#FFD700',
-  green: '#00E676',
-  blue: '#42A5F5',
-  pink: '#E040FB',
+  yellow: colors.holdYellow,
+  green: colors.holdGreen,
+  blue: colors.holdBlue,
+  pink: colors.holdPink,
 };
 
 export type GradeSystem = 'hueco' | 'font';

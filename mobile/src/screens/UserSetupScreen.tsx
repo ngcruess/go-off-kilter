@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { colors } from '../theme';
 import {
   View,
   Text,
@@ -54,7 +55,7 @@ export const UserSetupScreen: React.FC = () => {
         <TextInput
           style={styles.input}
           placeholder="Username"
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.textMuted}
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
@@ -69,7 +70,7 @@ export const UserSetupScreen: React.FC = () => {
           disabled={submitting}
         >
           {submitting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.textPrimary} />
           ) : (
             <Text style={styles.buttonText}>Get Started</Text>
           )}
@@ -82,7 +83,7 @@ export const UserSetupScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: colors.pageBg,
   },
   inner: {
     flex: 1,
@@ -90,31 +91,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   title: {
-    color: '#fff',
+    color: colors.textPrimary,
     fontSize: 32,
     fontWeight: '800',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    color: '#888',
+    color: colors.textSecondary,
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 40,
   },
   input: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: colors.surfaceInput,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#fff',
+    color: colors.textPrimary,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
     marginBottom: 16,
   },
   button: {
-    backgroundColor: '#42A5F5',
+    backgroundColor: colors.accent,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
   },

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Circle, G, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { HoldColor, COLOR_HEX } from '../../types';
+import { colors } from '../../theme';
 
 interface HoldMarkerProps {
   cx: number;
@@ -36,7 +37,7 @@ export const HoldMarker: React.FC<HoldMarkerProps> = ({
           cx={cx}
           cy={cy}
           r={radius}
-          fill="#1a1a1a"
+          fill={colors.holdCenterFill}
           stroke={hex}
           strokeWidth={radius * 0.25}
         />
@@ -57,8 +58,8 @@ export const HoldMarker: React.FC<HoldMarkerProps> = ({
         cx={cx}
         cy={cy}
         r={radius}
-        fill="#222222"
-        stroke="#333333"
+        fill={colors.holdUnselectedFill}
+        stroke={colors.holdUnselectedStroke}
         strokeWidth={radius * 0.1}
       />
     </G>

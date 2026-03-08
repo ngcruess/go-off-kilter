@@ -1,4 +1,5 @@
 import React from 'react';
+import { colors } from '../theme';
 import {
   View,
   Text,
@@ -72,7 +73,7 @@ export const FollowingScreen: React.FC<Props> = ({ navigation }) => {
 
       {followingQuery.isLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#42A5F5" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : (
         <FlatList
@@ -95,33 +96,33 @@ export const FollowingScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: colors.pageBg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   list: { paddingVertical: 8 },
   findButton: {
-    margin: 12, backgroundColor: '#42A5F5', borderRadius: 10,
+    margin: 12, backgroundColor: colors.accent, borderRadius: 10,
     paddingVertical: 12, alignItems: 'center',
   },
-  findButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  findButtonText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   card: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#1a1a1a', marginHorizontal: 12, marginVertical: 4,
-    borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#2a2a2a',
+    backgroundColor: colors.surfaceRaised, marginHorizontal: 12, marginVertical: 4,
+    borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.borderCard,
   },
   avatar: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#2a2a2a', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.chip, justifyContent: 'center', alignItems: 'center',
     marginRight: 12,
   },
-  avatarText: { color: '#888', fontSize: 14, fontWeight: '700' },
+  avatarText: { color: colors.textSecondary, fontSize: 14, fontWeight: '700' },
   cardBody: { flex: 1 },
-  cardName: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  cardName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
   unfollowBtn: {
-    backgroundColor: '#2a2a2a', borderRadius: 8,
+    backgroundColor: colors.chip, borderRadius: 8,
     paddingHorizontal: 12, paddingVertical: 6,
-    borderWidth: 1, borderColor: '#444',
+    borderWidth: 1, borderColor: colors.borderMedium,
   },
-  unfollowText: { color: '#ff6b6b', fontSize: 13, fontWeight: '600' },
-  emptyText: { color: '#666', fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  emptySubtext: { color: '#555', fontSize: 14 },
+  unfollowText: { color: colors.error, fontSize: 13, fontWeight: '600' },
+  emptyText: { color: colors.textMuted, fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  emptySubtext: { color: colors.textDisabled, fontSize: 14 },
 });

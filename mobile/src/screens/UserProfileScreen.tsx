@@ -1,4 +1,5 @@
 import React from 'react';
+import { colors } from '../theme';
 import {
   View,
   Text,
@@ -62,7 +63,7 @@ export const UserProfileScreen: React.FC<Props> = ({ route, navigation }) => {
   if (userQuery.isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#42A5F5" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -129,7 +130,7 @@ export const UserProfileScreen: React.FC<Props> = ({ route, navigation }) => {
       )}
 
       {statsQuery.isLoading ? (
-        <ActivityIndicator size="large" color="#42A5F5" style={{ marginVertical: 24 }} />
+        <ActivityIndicator size="large" color={colors.accent} style={{ marginVertical: 24 }} />
       ) : stats ? (
         <>
           <View style={styles.statsRow}>
@@ -150,7 +151,7 @@ export const UserProfileScreen: React.FC<Props> = ({ route, navigation }) => {
           {stats.total_sends > 0 && (
             <View style={styles.chartSection}>
               <Text style={styles.chartTitle}>Sends by Grade</Text>
-              <BarChart data={gradeChartData} barColor="#42A5F5" height={140} />
+              <BarChart data={gradeChartData} barColor={colors.accent} height={140} />
             </View>
           )}
         </>
@@ -159,7 +160,7 @@ export const UserProfileScreen: React.FC<Props> = ({ route, navigation }) => {
       <View style={styles.climbsSection}>
         <Text style={styles.sectionTitle}>Climbs Set</Text>
         {setClimbsQuery.isLoading ? (
-          <ActivityIndicator size="small" color="#42A5F5" style={{ marginVertical: 12 }} />
+          <ActivityIndicator size="small" color={colors.accent} style={{ marginVertical: 12 }} />
         ) : (setClimbsQuery.data ?? []).length === 0 ? (
           <Text style={styles.emptyText}>No climbs set.</Text>
         ) : (
@@ -192,58 +193,58 @@ export const UserProfileScreen: React.FC<Props> = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: colors.pageBg },
   content: { paddingBottom: 40 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.pageBg },
   titleCard: {
     flexDirection: 'row', alignItems: 'center', padding: 20,
-    borderBottomWidth: 1, borderBottomColor: '#1a1a1a',
+    borderBottomWidth: 1, borderBottomColor: colors.surfaceRaised,
   },
   avatar: {
     width: 60, height: 60, borderRadius: 30,
-    backgroundColor: '#2a2a2a', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.chip, justifyContent: 'center', alignItems: 'center',
     marginRight: 16,
   },
-  avatarText: { color: '#888', fontSize: 22, fontWeight: '700' },
+  avatarText: { color: colors.textSecondary, fontSize: 22, fontWeight: '700' },
   titleInfo: { flex: 1 },
-  username: { color: '#fff', fontSize: 22, fontWeight: '700' },
-  memberSince: { color: '#666', fontSize: 13, marginTop: 3 },
+  username: { color: colors.textPrimary, fontSize: 22, fontWeight: '700' },
+  memberSince: { color: colors.textMuted, fontSize: 13, marginTop: 3 },
   followButton: {
     marginHorizontal: 16, marginTop: 12,
-    backgroundColor: '#42A5F5', borderRadius: 10,
+    backgroundColor: colors.accent, borderRadius: 10,
     paddingVertical: 12, alignItems: 'center',
   },
   followButtonActive: {
-    backgroundColor: '#2a2a2a', borderWidth: 1, borderColor: '#444',
+    backgroundColor: colors.chip, borderWidth: 1, borderColor: colors.borderMedium,
   },
-  followText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  followTextActive: { color: '#aaa' },
+  followText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
+  followTextActive: { color: colors.textTertiary },
   statsRow: {
     flexDirection: 'row', justifyContent: 'space-around',
     paddingVertical: 16, paddingHorizontal: 12,
-    borderBottomWidth: 1, borderBottomColor: '#1a1a1a',
+    borderBottomWidth: 1, borderBottomColor: colors.surfaceRaised,
   },
   statBadge: { alignItems: 'center' },
-  statValue: { color: '#fff', fontSize: 20, fontWeight: '800' },
-  statLabel: { color: '#888', fontSize: 11, textTransform: 'uppercase', marginTop: 4 },
+  statValue: { color: colors.textPrimary, fontSize: 20, fontWeight: '800' },
+  statLabel: { color: colors.textSecondary, fontSize: 11, textTransform: 'uppercase', marginTop: 4 },
   chartSection: {
     paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#1a1a1a',
+    borderBottomWidth: 1, borderBottomColor: colors.surfaceRaised,
   },
-  chartTitle: { color: '#999', fontSize: 13, fontWeight: '600', marginBottom: 10 },
+  chartTitle: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 10 },
   climbsSection: { paddingHorizontal: 16, paddingTop: 16 },
-  sectionTitle: { color: '#fff', fontSize: 17, fontWeight: '700', marginBottom: 12 },
-  emptyText: { color: '#555', fontSize: 14, paddingVertical: 12 },
+  sectionTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: '700', marginBottom: 12 },
+  emptyText: { color: colors.textDisabled, fontSize: 14, paddingVertical: 12 },
   climbCard: {
-    backgroundColor: '#1a1a1a', borderRadius: 10, padding: 12,
-    marginBottom: 8, borderWidth: 1, borderColor: '#2a2a2a',
+    backgroundColor: colors.surfaceRaised, borderRadius: 10, padding: 12,
+    marginBottom: 8, borderWidth: 1, borderColor: colors.borderCard,
   },
   climbCardTop: {
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'center', marginBottom: 4,
   },
-  climbName: { color: '#fff', fontSize: 15, fontWeight: '600', flex: 1, marginRight: 8 },
-  climbGrade: { color: '#42A5F5', fontSize: 15, fontWeight: '700' },
+  climbName: { color: colors.textPrimary, fontSize: 15, fontWeight: '600', flex: 1, marginRight: 8 },
+  climbGrade: { color: colors.accent, fontSize: 15, fontWeight: '700' },
   climbCardBottom: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  climbMeta: { color: '#aaa', fontSize: 12 },
+  climbMeta: { color: colors.textTertiary, fontSize: 12 },
 });

@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { colors } from '../theme';
 import {
   View,
   Text,
@@ -90,7 +91,7 @@ export const CreateScreen: React.FC<Props> = ({ route, navigation }) => {
   if (layoutQuery.isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#42A5F5" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -140,7 +141,7 @@ export const CreateScreen: React.FC<Props> = ({ route, navigation }) => {
           disabled={saving}
         >
           {saving ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={colors.textPrimary} />
           ) : (
             <Text style={styles.nextButtonText}>Next →</Text>
           )}
@@ -153,23 +154,23 @@ export const CreateScreen: React.FC<Props> = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: colors.pageBg,
   },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0a0a0a',
+    backgroundColor: colors.pageBg,
   },
   errorText: {
-    color: '#ff6b6b',
+    color: colors.error,
     fontSize: 16,
   },
   legend: {
     padding: 12,
   },
   legendTitle: {
-    color: '#888',
+    color: colors.textSecondary,
     fontSize: 13,
     marginBottom: 8,
   },
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   legendLabel: {
-    color: '#aaa',
+    color: colors.textTertiary,
     fontSize: 13,
     textTransform: 'capitalize',
   },
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   selectedCountText: {
-    color: '#888',
+    color: colors.textSecondary,
     fontSize: 14,
   },
   actions: {
@@ -207,21 +208,21 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     flex: 1,
-    backgroundColor: '#1e1e1e',
+    backgroundColor: colors.surfaceInput,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
   },
   clearButtonText: {
-    color: '#ff6b6b',
+    color: colors.error,
     fontSize: 16,
     fontWeight: '600',
   },
   nextButton: {
     flex: 2,
-    backgroundColor: '#42A5F5',
+    backgroundColor: colors.accent,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   nextButtonText: {
-    color: '#fff',
+    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
   },

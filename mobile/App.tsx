@@ -4,6 +4,7 @@ import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserProvider, useUser } from './src/context/UserContext';
+import { colors } from './src/theme';
 import { UserSetupScreen } from './src/screens/UserSetupScreen';
 import { BrowseScreen } from './src/screens/BrowseScreen';
 import { ProblemDetailScreen } from './src/screens/ProblemDetailScreen';
@@ -38,11 +39,11 @@ const theme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: '#0a0a0a',
-    card: '#1a1a1a',
-    text: '#ffffff',
-    border: '#333333',
-    primary: '#42A5F5',
+    background: colors.pageBg,
+    card: colors.surfaceRaised,
+    text: colors.textPrimary,
+    border: colors.border,
+    primary: colors.accent,
   },
 };
 
@@ -51,8 +52,8 @@ function AppNavigator() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' }}>
-        <ActivityIndicator size="large" color="#42A5F5" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.pageBg }}>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -65,8 +66,8 @@ function AppNavigator() {
     <NavigationContainer theme={theme}>
         <Stack.Navigator
           screenOptions={{
-            headerStyle: { backgroundColor: '#1a1a1a' },
-            headerTintColor: '#ffffff',
+            headerStyle: { backgroundColor: colors.surfaceRaised },
+            headerTintColor: colors.textPrimary,
             headerTitleStyle: { fontWeight: '600' },
           }}
         >

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Rect, Line } from 'react-native-svg';
 import { PlacementFull, HoldColor, ClimbPlacement, ROLE_COLORS } from '../../types';
+import { colors } from '../../theme';
 import { HoldMarker } from '../HoldMarker/HoldMarker';
 
 interface BoardViewProps {
@@ -122,7 +123,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
           y={vbParts[1]}
           width={vbParts[2]}
           height={vbParts[3]}
-          fill="#0d0d0d"
+          fill={colors.boardBg}
         />
         {placements.map((p) => (
           <HoldMarker
@@ -143,7 +144,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    backgroundColor: '#0d0d0d',
+    backgroundColor: colors.boardBg,
     overflow: 'hidden',
   },
 });

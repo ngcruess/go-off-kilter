@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ClimbSummary } from '../../types';
+import { colors } from '../../theme';
 
 interface ProblemCardProps {
   climb: ClimbSummary;
@@ -46,13 +47,13 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({ climb, onPress, onLong
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: colors.surfaceInput,
     borderRadius: 10,
     padding: 14,
     marginHorizontal: 16,
     marginVertical: 5,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: colors.chip,
   },
   header: {
     flexDirection: 'row',
@@ -61,14 +62,14 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   name: {
-    color: '#ffffff',
+    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: '600',
     flex: 1,
     marginRight: 8,
   },
   grade: {
-    color: '#42A5F5',
+    color: colors.accent,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -78,23 +79,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   setter: {
-    color: '#888888',
+    color: colors.textSecondary,
     fontSize: 13,
   },
   angle: {
-    color: '#888888',
+    color: colors.textSecondary,
     fontSize: 13,
   },
   stars: {
-    color: '#FFD700',
+    color: colors.star,
     fontSize: 13,
   },
   ascents: {
-    color: '#666666',
+    color: colors.textMuted,
     fontSize: 12,
   },
   noMatch: {
-    color: '#e57373',
+    color: colors.errorMuted,
     fontSize: 11,
     fontWeight: '600',
   },

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { colors } from '../theme';
 import {
   View,
   Text,
@@ -113,7 +114,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       {statsQuery.isLoading ? (
-        <ActivityIndicator size="large" color="#42A5F5" style={{ marginVertical: 24 }} />
+        <ActivityIndicator size="large" color={colors.accent} style={{ marginVertical: 24 }} />
       ) : stats ? (
         <>
           <View style={styles.statsRow}>
@@ -161,18 +162,18 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
             {chartTab === 'grade' ? (
               stats && stats.total_sends > 0 ? (
-                <BarChart data={gradeChartData} barColor="#42A5F5" height={160} />
+                <BarChart data={gradeChartData} barColor={colors.accent} height={160} />
               ) : (
                 <Text style={styles.chartEmpty}>No sends yet</Text>
               )
             ) : chartTab === 'angle' ? (
               stats && stats.total_sends > 0 ? (
-                <BarChart data={angleChartData} barColor="#FFA726" height={160} />
+                <BarChart data={angleChartData} barColor={colors.chartAngle} height={160} />
               ) : (
                 <Text style={styles.chartEmpty}>No sends yet</Text>
               )
             ) : timeChartData.length > 0 ? (
-              <BarChart data={timeChartData} barColor="#66BB6A" height={160} />
+              <BarChart data={timeChartData} barColor={colors.chartTime} height={160} />
             ) : (
               <Text style={styles.chartEmpty}>No sends yet</Text>
             )}
@@ -205,7 +206,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         </View>
 
         {recentSendsQuery.isLoading ? (
-          <ActivityIndicator size="small" color="#42A5F5" style={{ marginVertical: 12 }} />
+          <ActivityIndicator size="small" color={colors.accent} style={{ marginVertical: 12 }} />
         ) : recentSends.length === 0 ? (
           <Text style={styles.emptyText}>No sends logged yet.</Text>
         ) : (
@@ -236,7 +237,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.sendsSection}>
         <Text style={styles.sendsTitle}>Climbs Set</Text>
         {setClimbsQuery.isLoading ? (
-          <ActivityIndicator size="small" color="#42A5F5" style={{ marginVertical: 12 }} />
+          <ActivityIndicator size="small" color={colors.accent} style={{ marginVertical: 12 }} />
         ) : (setClimbsQuery.data ?? []).length === 0 ? (
           <Text style={styles.emptyText}>No climbs set yet.</Text>
         ) : (
@@ -290,28 +291,28 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: colors.pageBg },
   content: { paddingBottom: 40 },
   titleCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a1a',
+    borderBottomColor: colors.surfaceRaised,
   },
   avatar: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: colors.chip,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
-  avatarText: { color: '#888', fontSize: 22, fontWeight: '700' },
+  avatarText: { color: colors.textSecondary, fontSize: 22, fontWeight: '700' },
   titleInfo: { flex: 1 },
-  username: { color: '#fff', fontSize: 22, fontWeight: '700' },
-  memberSince: { color: '#666', fontSize: 13, marginTop: 3 },
+  username: { color: colors.textPrimary, fontSize: 22, fontWeight: '700' },
+  memberSince: { color: colors.textMuted, fontSize: 13, marginTop: 3 },
 
   statsRow: {
     flexDirection: 'row',
@@ -319,21 +320,21 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a1a',
+    borderBottomColor: colors.surfaceRaised,
   },
   statBadge: { alignItems: 'center' },
-  statValue: { color: '#fff', fontSize: 20, fontWeight: '800' },
-  statLabel: { color: '#888', fontSize: 11, textTransform: 'uppercase', marginTop: 4 },
+  statValue: { color: colors.textPrimary, fontSize: 20, fontWeight: '800' },
+  statLabel: { color: colors.textSecondary, fontSize: 11, textTransform: 'uppercase', marginTop: 4 },
 
   chartSection: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a1a',
+    borderBottomColor: colors.surfaceRaised,
   },
   chartToggle: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 10,
     padding: 3,
     marginBottom: 12,
@@ -344,10 +345,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
-  toggleBtnActive: { backgroundColor: '#2a2a2a' },
-  toggleText: { color: '#666', fontSize: 13, fontWeight: '600' },
-  toggleTextActive: { color: '#fff' },
-  chartEmpty: { color: '#555', fontSize: 14, textAlign: 'center', paddingVertical: 24 },
+  toggleBtnActive: { backgroundColor: colors.chip },
+  toggleText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+  toggleTextActive: { color: colors.textPrimary },
+  chartEmpty: { color: colors.textDisabled, fontSize: 14, textAlign: 'center', paddingVertical: 24 },
 
   sendsSection: { paddingHorizontal: 16, paddingTop: 16 },
   sendsHeader: {
@@ -356,17 +357,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  sendsTitle: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  viewAll: { color: '#42A5F5', fontSize: 14, fontWeight: '600' },
-  emptyText: { color: '#555', fontSize: 14, paddingVertical: 12 },
+  sendsTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: '700' },
+  viewAll: { color: colors.accent, fontSize: 14, fontWeight: '600' },
+  emptyText: { color: colors.textDisabled, fontSize: 14, paddingVertical: 12 },
 
   sendCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: colors.chip,
   },
   sendCardTop: {
     flexDirection: 'row',
@@ -374,33 +375,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  sendName: { color: '#fff', fontSize: 15, fontWeight: '600', flex: 1, marginRight: 8 },
-  sendGrade: { color: '#42A5F5', fontSize: 15, fontWeight: '700' },
+  sendName: { color: colors.textPrimary, fontSize: 15, fontWeight: '600', flex: 1, marginRight: 8 },
+  sendGrade: { color: colors.accent, fontSize: 15, fontWeight: '700' },
   sendCardBottom: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  sendMeta: { color: '#aaa', fontSize: 12 },
-  sendDate: { color: '#666', fontSize: 12, marginLeft: 'auto' },
+  sendMeta: { color: colors.textTertiary, fontSize: 12 },
+  sendDate: { color: colors.textMuted, fontSize: 12, marginLeft: 'auto' },
 
   myListsButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginHorizontal: 16, marginTop: 16,
-    backgroundColor: '#1a1a1a', borderRadius: 10,
+    backgroundColor: colors.surfaceRaised, borderRadius: 10,
     paddingVertical: 14, paddingHorizontal: 16,
-    borderWidth: 1, borderColor: '#2a2a2a',
+    borderWidth: 1, borderColor: colors.chip,
   },
-  myListsText: { color: '#42A5F5', fontSize: 15, fontWeight: '600' },
-  myListsChevron: { color: '#555', fontSize: 22, fontWeight: '300' },
+  myListsText: { color: colors.accent, fontSize: 15, fontWeight: '600' },
+  myListsChevron: { color: colors.textDisabled, fontSize: 22, fontWeight: '300' },
 
   prefSection: {
     marginHorizontal: 16,
     marginTop: 24,
   },
-  prefTitle: { color: '#fff', fontSize: 15, fontWeight: '700', marginBottom: 10 },
+  prefTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginBottom: 10 },
   segmented: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: colors.chip,
     overflow: 'hidden',
   },
   segBtn: {
@@ -409,20 +410,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   segBtnActive: {
-    backgroundColor: '#42A5F5',
+    backgroundColor: colors.accent,
   },
-  segBtnText: { color: '#aaa', fontSize: 14, fontWeight: '600' },
-  segBtnTextActive: { color: '#fff' },
+  segBtnText: { color: colors.textTertiary, fontSize: 14, fontWeight: '600' },
+  segBtnTextActive: { color: colors.textPrimary },
 
   logoutButton: {
     marginHorizontal: 16,
     marginTop: 24,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: colors.chip,
   },
-  logoutText: { color: '#ff6b6b', fontSize: 15, fontWeight: '600' },
+  logoutText: { color: colors.error, fontSize: 15, fontWeight: '600' },
 });

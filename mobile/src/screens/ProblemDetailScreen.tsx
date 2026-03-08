@@ -29,6 +29,7 @@ import {
 import { BoardView } from '../components/BoardView/BoardView';
 import { useUser } from '../context/UserContext';
 import { DifficultyGrade, ANGLES, extractGrade } from '../types';
+import { colors } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProblemDetail'>;
 
@@ -111,21 +112,21 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             <TouchableOpacity
               onPress={handleSendToBoard}
               style={{
-                backgroundColor: '#2a2a2a', borderRadius: 14,
+                backgroundColor: colors.chip, borderRadius: 14,
                 paddingHorizontal: 10, paddingVertical: 4,
               }}
             >
-              <MaterialCommunityIcons name="bluetooth" size={18} color="#00E5FF" />
+              <MaterialCommunityIcons name="bluetooth" size={18} color={colors.accent} />
             </TouchableOpacity>
           )}
           <TouchableOpacity
             onPress={() => setShowAnglePicker(true)}
             style={{
-              backgroundColor: '#2a2a2a', borderRadius: 14,
+              backgroundColor: colors.chip, borderRadius: 14,
               paddingHorizontal: 10, paddingVertical: 4,
             }}
           >
-            <Text style={{ color: '#00E5FF', fontSize: 14, fontWeight: '700' }}>{angle}{'\u00B0'}</Text>
+            <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '700' }}>{angle}{'\u00B0'}</Text>
           </TouchableOpacity>
         </View>
       ),
@@ -205,7 +206,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   if (climbQuery.isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#00E5FF" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -235,7 +236,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
       {layoutQuery.isLoading && (
         <View style={styles.boardPlaceholder}>
-          <ActivityIndicator size="large" color="#00E5FF" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       )}
 
@@ -348,7 +349,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             <TextInput
               style={styles.commentInput}
               placeholder="Nice problem!"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               value={comment}
               onChangeText={setComment}
               multiline
@@ -371,7 +372,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 disabled={logging}
               >
                 {logging ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={colors.textPrimary} />
                 ) : (
                   <Text style={styles.modalSubmitText}>Log Send</Text>
                 )}
@@ -410,7 +411,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <Text style={styles.modalTitle}>Add to List</Text>
 
           {listsQuery.isLoading ? (
-            <ActivityIndicator color="#00E5FF" style={{ marginVertical: 20 }} />
+            <ActivityIndicator color={colors.accent} style={{ marginVertical: 20 }} />
           ) : (listsQuery.data ?? []).length === 0 ? (
             <Text style={styles.listEmptyText}>No lists yet. Create one below.</Text>
           ) : (
@@ -434,7 +435,7 @@ export const ProblemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             <TextInput
               style={styles.newListInput}
               placeholder="New list name..."
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               value={newListName}
               onChangeText={setNewListName}
               autoCapitalize="none"
@@ -466,126 +467,126 @@ const StatBadge: React.FC<{ label: string; value: string }> = ({ label, value })
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: colors.pageBg },
   content: { paddingBottom: 32 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' },
-  errorText: { color: '#ff6b6b', fontSize: 16 },
-  boardPlaceholder: { height: 300, justifyContent: 'center', alignItems: 'center', backgroundColor: '#111' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.pageBg },
+  errorText: { color: colors.error, fontSize: 16 },
+  boardPlaceholder: { height: 300, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.surface },
   info: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12 },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  name: { color: '#ffffff', fontSize: 24, fontWeight: '700', flex: 1, marginRight: 12 },
-  grade: { color: '#00E5FF', fontSize: 24, fontWeight: '800', fontStyle: 'italic' },
-  setter: { color: '#888', fontSize: 14, marginBottom: 10 },
+  name: { color: colors.textPrimary, fontSize: 24, fontWeight: '700', flex: 1, marginRight: 12 },
+  grade: { color: colors.accent, fontSize: 24, fontWeight: '800', fontStyle: 'italic' },
+  setter: { color: colors.textSecondary, fontSize: 14, marginBottom: 10 },
   statsRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   statBadge: {
-    backgroundColor: '#111', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6,
-    borderWidth: 0.5, borderColor: '#333',
+    backgroundColor: colors.surface, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6,
+    borderWidth: 0.5, borderColor: colors.border,
   },
-  statLabel: { color: '#888', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
-  statValue: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  statLabel: { color: colors.textSecondary, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  statValue: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
   noMatchBadge: {
-    backgroundColor: '#2a1a1a', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6,
-    borderWidth: 1, borderColor: '#3a2a2a', justifyContent: 'center',
+    backgroundColor: colors.errorBg, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6,
+    borderWidth: 1, borderColor: colors.errorBorder, justifyContent: 'center',
   },
-  noMatchText: { color: '#e57373', fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  noMatchText: { color: colors.errorMuted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
   yourStatsRow: {
     flexDirection: 'row', alignItems: 'center', marginBottom: 8,
-    backgroundColor: '#163028', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14,
-    borderWidth: 0.5, borderColor: '#4dba8a',
+    backgroundColor: colors.accentGreenBg, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14,
+    borderWidth: 0.5, borderColor: colors.accentGreen,
   },
-  yourStatsLabel: { color: '#4dba8a', fontSize: 13, marginRight: 6 },
-  yourStatsValue: { color: '#4dba8a', fontSize: 14, fontWeight: '600' },
-  description: { color: '#aaa', fontSize: 14, lineHeight: 20, marginBottom: 4 },
+  yourStatsLabel: { color: colors.accentGreen, fontSize: 13, marginRight: 6 },
+  yourStatsValue: { color: colors.accentGreen, fontSize: 14, fontWeight: '600' },
+  description: { color: colors.textTertiary, fontSize: 14, lineHeight: 20, marginBottom: 4 },
   logRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   logButton: { flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center', borderWidth: 0.5 },
-  logAttemptButton: { backgroundColor: '#111', borderColor: '#333' },
-  logSendButton: { backgroundColor: '#163028', borderColor: '#4dba8a' },
-  logAttemptText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  logSendText: { color: '#4dba8a', fontSize: 15, fontWeight: '700' },
+  logAttemptButton: { backgroundColor: colors.surface, borderColor: colors.border },
+  logSendButton: { backgroundColor: colors.accentGreenBg, borderColor: colors.accentGreen },
+  logAttemptText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
+  logSendText: { color: colors.accentGreen, fontSize: 15, fontWeight: '700' },
 
   modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end',
+    flex: 1, backgroundColor: colors.overlayDark, justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1a1a1a', borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    backgroundColor: colors.surfaceRaised, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     padding: 20, paddingBottom: 40, maxHeight: '80%',
   },
-  modalTitle: { color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 20, textAlign: 'center' },
-  modalLabel: { color: '#888', fontSize: 12, textTransform: 'uppercase', marginBottom: 8, marginTop: 12 },
+  modalTitle: { color: colors.textPrimary, fontSize: 20, fontWeight: '700', marginBottom: 20, textAlign: 'center' },
+  modalLabel: { color: colors.textSecondary, fontSize: 12, textTransform: 'uppercase', marginBottom: 8, marginTop: 12 },
   gradeScroll: { flexGrow: 0, marginBottom: 4 },
   gradeChip: {
-    backgroundColor: '#2a2a2a', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6,
-    marginRight: 6, borderWidth: 1, borderColor: '#444',
+    backgroundColor: colors.chip, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6,
+    marginRight: 6, borderWidth: 1, borderColor: colors.borderMedium,
   },
-  gradeChipActive: { backgroundColor: '#00E5FF', borderColor: '#00E5FF' },
-  gradeChipText: { color: '#aaa', fontSize: 13 },
-  gradeChipTextActive: { color: '#000' },
+  gradeChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  gradeChipText: { color: colors.textTertiary, fontSize: 13 },
+  gradeChipTextActive: { color: colors.textOnAccent },
   qualityRow: { flexDirection: 'row', gap: 10 },
   qualityButton: {
-    backgroundColor: '#2a2a2a', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8,
-    borderWidth: 1, borderColor: '#444',
+    backgroundColor: colors.chip, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8,
+    borderWidth: 1, borderColor: colors.borderMedium,
   },
-  qualityButtonActive: { backgroundColor: '#00E5FF', borderColor: '#00E5FF' },
-  qualityText: { color: '#FFD700', fontSize: 16 },
+  qualityButtonActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  qualityText: { color: colors.star, fontSize: 16 },
   commentInput: {
-    backgroundColor: '#2a2a2a', borderRadius: 10, padding: 12, color: '#fff',
-    fontSize: 14, minHeight: 60, textAlignVertical: 'top', borderWidth: 1, borderColor: '#444',
+    backgroundColor: colors.chip, borderRadius: 10, padding: 12, color: colors.textPrimary,
+    fontSize: 14, minHeight: 60, textAlignVertical: 'top', borderWidth: 1, borderColor: colors.borderMedium,
   },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
   modalCancel: {
     flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center',
-    backgroundColor: '#333',
+    backgroundColor: colors.border,
   },
-  modalCancelText: { color: '#aaa', fontSize: 15, fontWeight: '600' },
+  modalCancelText: { color: colors.textTertiary, fontSize: 15, fontWeight: '600' },
   modalSubmit: {
     flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center',
-    backgroundColor: '#1a3a2a',
+    backgroundColor: colors.accentGreenBg,
   },
-  modalSubmitText: { color: '#00E5FF', fontSize: 15, fontWeight: '700' },
+  modalSubmitText: { color: colors.accent, fontSize: 15, fontWeight: '700' },
   angleModalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center',
+    flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center',
   },
-  angleModalContent: { backgroundColor: '#1a1a1a', borderRadius: 16, padding: 20, width: 300 },
-  angleModalTitle: { color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
+  angleModalContent: { backgroundColor: colors.surfaceRaised, borderRadius: 16, padding: 20, width: 300 },
+  angleModalTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
   angleGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   angleOption: {
-    backgroundColor: '#2a2a2a', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10,
-    borderWidth: 1, borderColor: '#444', minWidth: 56, alignItems: 'center',
+    backgroundColor: colors.chip, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10,
+    borderWidth: 1, borderColor: colors.borderMedium, minWidth: 56, alignItems: 'center',
   },
-  angleOptionActive: { backgroundColor: '#00E5FF', borderColor: '#00E5FF' },
-  angleOptionText: { color: '#aaa', fontSize: 15, fontWeight: '600' },
-  angleOptionTextActive: { color: '#000' },
+  angleOptionActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  angleOptionText: { color: colors.textTertiary, fontSize: 15, fontWeight: '600' },
+  angleOptionTextActive: { color: colors.textOnAccent },
   listButton: {
-    marginTop: 8, backgroundColor: '#111',
+    marginTop: 8, backgroundColor: colors.surface,
     borderRadius: 12, paddingVertical: 12, alignItems: 'center',
-    borderWidth: 0.5, borderColor: '#333',
+    borderWidth: 0.5, borderColor: colors.border,
   },
-  listButtonText: { color: '#00E5FF', fontSize: 15, fontWeight: '700' },
+  listButtonText: { color: colors.accent, fontSize: 15, fontWeight: '700' },
   listModalContent: {
-    backgroundColor: '#1a1a1a', borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    backgroundColor: colors.surfaceRaised, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     padding: 20, paddingBottom: 40, maxHeight: '70%',
   },
   listScroll: { marginBottom: 12 },
-  listEmptyText: { color: '#666', fontSize: 14, textAlign: 'center', marginVertical: 20 },
+  listEmptyText: { color: colors.textMuted, fontSize: 14, textAlign: 'center', marginVertical: 20 },
   listRow: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#2a2a2a',
+    borderBottomWidth: 1, borderBottomColor: colors.borderCard,
   },
   listCheckbox: {
-    width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: '#555',
+    width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: colors.textDisabled,
     marginRight: 12, justifyContent: 'center', alignItems: 'center',
   },
-  listCheckboxActive: { backgroundColor: '#00E5FF', borderColor: '#00E5FF' },
-  listCheckmark: { color: '#000', fontSize: 14, fontWeight: '700' },
-  listRowText: { color: '#fff', fontSize: 15 },
+  listCheckboxActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  listCheckmark: { color: colors.textOnAccent, fontSize: 14, fontWeight: '700' },
+  listRowText: { color: colors.textPrimary, fontSize: 15 },
   newListRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   newListInput: {
-    flex: 1, backgroundColor: '#2a2a2a', borderRadius: 10, paddingHorizontal: 12,
-    paddingVertical: 8, color: '#fff', fontSize: 14, borderWidth: 1, borderColor: '#444',
+    flex: 1, backgroundColor: colors.chip, borderRadius: 10, paddingHorizontal: 12,
+    paddingVertical: 8, color: colors.textPrimary, fontSize: 14, borderWidth: 1, borderColor: colors.borderMedium,
   },
   newListButton: {
-    backgroundColor: '#00E5FF', borderRadius: 10, paddingHorizontal: 16,
+    backgroundColor: colors.accent, borderRadius: 10, paddingHorizontal: 16,
     justifyContent: 'center',
   },
-  newListButtonText: { color: '#000', fontSize: 14, fontWeight: '700' },
+  newListButtonText: { color: colors.textOnAccent, fontSize: 14, fontWeight: '700' },
 });

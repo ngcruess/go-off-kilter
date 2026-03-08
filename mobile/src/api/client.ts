@@ -14,6 +14,7 @@ import {
   UserStats,
   Ascent,
 } from '../types';
+import { colors } from '../theme';
 
 const API_BASE = __DEV__
   ? 'http://localhost:8080/api'
@@ -227,7 +228,7 @@ export async function fetchUserLists(userId: number): Promise<ClimbList[]> {
 export async function createList(userId: number, name: string, color?: string): Promise<ClimbList> {
   return request<ClimbList>(`/users/${userId}/lists`, {
     method: 'POST',
-    body: JSON.stringify({ name, color: color || '#42A5F5' }),
+    body: JSON.stringify({ name, color: color || colors.accent }),
   });
 }
 

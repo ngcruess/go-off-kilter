@@ -12,6 +12,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { fetchUserAscents } from '../api/client';
 import { useUser } from '../context/UserContext';
+import { colors } from '../theme';
 import { AscentSummary } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Logbook'>;
@@ -81,7 +82,7 @@ export const LogbookScreen: React.FC<Props> = ({ navigation }) => {
 
       {ascentsQuery.isLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#42A5F5" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : ascents.length === 0 ? (
         <View style={styles.center}>
@@ -129,14 +130,14 @@ export const LogbookScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: colors.pageBg },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 12, borderBottomWidth: 1, borderBottomColor: '#222',
+    padding: 12, borderBottomWidth: 1, borderBottomColor: colors.borderSubtle,
   },
   filterToggle: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 10,
     padding: 3,
   },
@@ -145,33 +146,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
   },
-  filterBtnActive: { backgroundColor: '#2a2a2a' },
-  filterText: { color: '#666', fontSize: 13, fontWeight: '600' },
-  filterTextActive: { color: '#fff' },
-  totalLabel: { color: '#888', fontSize: 13 },
+  filterBtnActive: { backgroundColor: colors.chip },
+  filterText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+  filterTextActive: { color: colors.textPrimary },
+  totalLabel: { color: colors.textSecondary, fontSize: 13 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { color: '#888', fontSize: 16, marginBottom: 8 },
-  emptySubtext: { color: '#555', fontSize: 14, textAlign: 'center', paddingHorizontal: 40 },
+  emptyText: { color: colors.textSecondary, fontSize: 16, marginBottom: 8 },
+  emptySubtext: { color: colors.textDisabled, fontSize: 14, textAlign: 'center', paddingHorizontal: 40 },
   list: { padding: 12 },
   card: {
-    backgroundColor: '#1a1a1a', borderRadius: 12, padding: 14, marginBottom: 10,
-    borderWidth: 1, borderColor: '#2a2a2a',
+    backgroundColor: colors.surfaceRaised, borderRadius: 12, padding: 14, marginBottom: 10,
+    borderWidth: 1, borderColor: colors.borderCard,
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  climbName: { color: '#fff', fontSize: 16, fontWeight: '600', flex: 1, marginRight: 10 },
+  climbName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600', flex: 1, marginRight: 10 },
   typeBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
-  sendBadge: { backgroundColor: '#2e7d32' },
-  attemptBadge: { backgroundColor: '#555' },
-  typeBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  sendBadge: { backgroundColor: colors.sendBadge },
+  attemptBadge: { backgroundColor: colors.textDisabled },
+  typeBadgeText: { color: colors.textPrimary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
   cardBottom: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  cardMeta: { color: '#aaa', fontSize: 13 },
-  cardDate: { color: '#666', fontSize: 12, marginLeft: 'auto' },
-  cardComment: { color: '#888', fontSize: 13, marginTop: 6, fontStyle: 'italic' },
+  cardMeta: { color: colors.textTertiary, fontSize: 13 },
+  cardDate: { color: colors.textMuted, fontSize: 12, marginLeft: 'auto' },
+  cardComment: { color: colors.textSecondary, fontSize: 13, marginTop: 6, fontStyle: 'italic' },
   pagination: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 16, borderTopWidth: 1, borderTopColor: '#222',
+    padding: 16, borderTopWidth: 1, borderTopColor: colors.borderSubtle,
   },
-  pageLink: { color: '#42A5F5', fontSize: 14, fontWeight: '600' },
-  pageLinkDisabled: { color: '#444' },
-  pageInfo: { color: '#888', fontSize: 13 },
+  pageLink: { color: colors.accent, fontSize: 14, fontWeight: '600' },
+  pageLinkDisabled: { color: colors.borderMedium },
+  pageInfo: { color: colors.textSecondary, fontSize: 13 },
 });
